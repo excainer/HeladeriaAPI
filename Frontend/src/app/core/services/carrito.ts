@@ -96,7 +96,6 @@ export class CarritoService {
       detalles: this._lineas().map((linea) => ({
         productoId: linea.producto.productoId,
         cantidad: linea.cantidad,
-        precioUnitario: linea.producto.precio,
         sabores: linea.sabores.length ? linea.sabores.join(', ') : undefined,
         toppings: linea.toppings.length ? linea.toppings.join(', ') : undefined,
         observaciones: linea.observaciones || undefined,

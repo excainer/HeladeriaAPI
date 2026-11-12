@@ -1,4 +1,4 @@
-// API falsa SOLO para desarrollo: imita los endpoints de HeladeriaAPI con los datos de Basededatos.sql.
+// API falsa SOLO para desarrollo: imita los endpoints de HeladeriaAPI con los datos de BaseDeDatos/script.sql.
 // No forma parte de la aplicación ni se despliega. Uso: npm run mock (puerto 5153).
 import { createServer } from 'node:http';
 
@@ -56,11 +56,19 @@ createServer((req, res) => {
       let datos; try { datos = JSON.parse(cuerpo); } catch { return enviar(res, 400); }
       if (!mesas.some((m) => m.mesaId === datos.mesaId)) return enviar(res, 404, `No existe la mesa ${datos.mesaId}.`);
       if (!Array.isArray(datos.detalles) || !datos.detalles.length) return enviar(res, 400, 'El pedido debe tener al menos un detalle.');
+      // Igual que la API real: el precio sale del catálogo, no de lo que envía el navegador.
+      const items = [];
+      for (const d of datos.detalles) {
+        const prod = productos.find((x) => x.productoId === d.productoId);
+        if (!prod) return enviar(res, 404, `No existe el producto ${d.productoId}.`);
+        if (!prod.activo) return enviar(res, 400, `El producto "${prod.nombre}" no está disponible.`);
+        items.push({ ...d, precioUnitario: prod.precio });
+      }
       const pedidoId = Math.max(0, ...pedidos.map((x) => x.pedidoId)) + 1;
-      const total = datos.detalles.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0);
+      const total = items.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0);
       const pedido = { pedidoId, mesaId: datos.mesaId, fecha: new Date().toISOString(), estado: 'Pendiente', total };
       pedidos = [...pedidos, pedido];
-      for (const d of datos.detalles) detalles.push({ detallePedidoId: detalles.length + 1, pedidoId, sabores: null, toppings: null, observaciones: null, ...d });
+      for (const d of items) detalles.push({ detallePedidoId: detalles.length + 1, pedidoId, sabores: null, toppings: null, observaciones: null, ...d });
       return enviar(res, 201, pedido);
     }
     if (recurso === 'pedidos' && b === 'estado' && req.method === 'PUT') {
@@ -68,6 +76,13 @@ createServer((req, res) => {
       if (!ESTADOS.includes(estado)) return enviar(res, 400, `Estado no válido. Valores permitidos: ${ESTADOS.join(', ')}.`);
       const pedido = pedidos.find((x) => x.pedidoId === Number(a));
       if (!pedido) return enviar(res, 404);
+      // Igual que la API real: solo se avanza al siguiente estado.
+      const actual = ESTADOS.indexOf(pedido.estado);
+      if (ESTADOS.indexOf(estado) !== actual + 1) {
+        return enviar(res, 409, actual === ESTADOS.length - 1
+          ? 'El pedido ya fue entregado y no se puede cambiar.'
+          : `No se puede pasar de "${pedido.estado}" a "${estado}". El siguiente estado es "${ESTADOS[actual + 1]}".`);
+      }
       pedido.estado = estado;
       return enviar(res, 204);
     }

@@ -64,7 +64,8 @@ describe('Carrito', () => {
       boton(f).click();
       const req = TestBed.inject(HttpTestingController).expectOne('/api/Pedidos');
       expect(req.request.body.mesaId).toBe(3);
-      expect(req.request.body.detalles[0].precioUnitario).toBe(7000);
+      // El precio lo pone el backend: el navegador no lo envía.
+      expect(req.request.body.detalles[0].precioUnitario).toBeUndefined();
       req.flush({ pedidoId: 12, mesaId: 3, fecha: '', estado: 'Pendiente', total: 7000 });
       await f.whenStable();
       expect(TestBed.inject(CarritoService).lineas()).toEqual([]);

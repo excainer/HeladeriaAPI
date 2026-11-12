@@ -36,7 +36,7 @@ describe('PedidoService', () => {
   it('crea un pedido con POST y el cuerpo que espera la API', () => {
     const pedido: NuevoPedido = {
       mesaId: 1,
-      detalles: [{ productoId: 2, cantidad: 1, precioUnitario: 5500, sabores: 'Chocolate' }],
+      detalles: [{ productoId: 2, cantidad: 1, sabores: 'Chocolate' }],
     };
     service.crear(pedido).subscribe();
     const req = http.expectOne('/api/Pedidos');

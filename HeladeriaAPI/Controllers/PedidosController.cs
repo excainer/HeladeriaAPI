@@ -19,19 +19,19 @@ namespace HeladeriaAPI.Controllers
 
         private readonly IPedidoQueries _pedidoQueries;
         private readonly IMesaQueries _mesaQueries;
+        private readonly IProductoQueries _productoQueries;
         private readonly IPedidoRepository _pedidoRepository;
-        private readonly IDetallePedidoRepository _detallePedidoRepository;
 
         public PedidosController(
             IPedidoQueries pedidoQueries,
             IMesaQueries mesaQueries,
-            IPedidoRepository pedidoRepository,
-            IDetallePedidoRepository detallePedidoRepository)
+            IProductoQueries productoQueries,
+            IPedidoRepository pedidoRepository)
         {
             _pedidoQueries = pedidoQueries;
             _mesaQueries = mesaQueries;
+            _productoQueries = productoQueries;
             _pedidoRepository = pedidoRepository;
-            _detallePedidoRepository = detallePedidoRepository;
         }
 
         /// <summary>
@@ -98,12 +98,13 @@ namespace HeladeriaAPI.Controllers
         }
 
         /// <summary>
-        /// Crea un pedido con sus detalles. Queda en estado "Pendiente" y el total se calcula solo.
+        /// Crea un pedido con sus detalles. Queda en estado "Pendiente".
+        /// El precio de cada ítem se toma del catálogo (no lo envía el cliente) y el total se calcula solo.
         /// </summary>
         /// <param name="solicitud">Mesa y lista de ítems del pedido.</param>
         /// <response code="201">Pedido creado.</response>
-        /// <response code="400">Los datos enviados no son válidos.</response>
-        /// <response code="404">No existe la mesa indicada.</response>
+        /// <response code="400">Los datos no son válidos o algún producto no está disponible.</response>
+        /// <response code="404">No existe la mesa o alguno de los productos indicados.</response>
         [HttpPost]
         [ProducesResponseType(typeof(Pedido), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -114,47 +115,53 @@ namespace HeladeriaAPI.Controllers
             if (mesa is null)
                 return NotFound($"No existe la mesa {solicitud.MesaId}.");
 
-            var pedidoId = await _pedidoRepository.CrearAsync(new Pedido { MesaId = solicitud.MesaId });
+            var productos = (await _productoQueries.ObtenerPorIdsAsync(
+                    solicitud.Detalles.Select(d => d.ProductoId)))
+                .ToDictionary(p => p.ProductoId);
 
-            try
+            var detalles = new List<DetallePedido>();
+            foreach (var item in solicitud.Detalles)
             {
-                foreach (var item in solicitud.Detalles)
+                if (!productos.TryGetValue(item.ProductoId, out var producto))
+                    return NotFound($"No existe el producto {item.ProductoId}.");
+
+                if (!producto.Activo)
+                    return BadRequest($"El producto \"{producto.Nombre}\" no está disponible.");
+
+                detalles.Add(new DetallePedido
                 {
-                    await _detallePedidoRepository.AgregarDetalleAsync(new DetallePedido
-                    {
-                        PedidoId = pedidoId,
-                        ProductoId = item.ProductoId,
-                        Cantidad = item.Cantidad,
-                        PrecioUnitario = item.PrecioUnitario,
-                        Sabores = item.Sabores,
-                        Toppings = item.Toppings,
-                        Observaciones = item.Observaciones
-                    });
-                }
+                    ProductoId = producto.ProductoId,
+                    Cantidad = item.Cantidad,
+                    PrecioUnitario = producto.Precio,
+                    Sabores = item.Sabores,
+                    Toppings = item.Toppings,
+                    Observaciones = item.Observaciones
+                });
             }
-            catch
-            {
-                // Si falla un detalle, se elimina el pedido para no dejarlo incompleto.
-                await _pedidoRepository.EliminarAsync(pedidoId);
-                throw;
-            }
+
+            // Pedido y detalles se guardan en una sola transacción: o todo o nada.
+            var pedidoId = await _pedidoRepository.CrearConDetallesAsync(
+                new Pedido { MesaId = solicitud.MesaId }, detalles);
 
             var creado = await _pedidoQueries.ObtenerPorIdAsync(pedidoId);
             return CreatedAtAction(nameof(ObtenerPorId), new { id = pedidoId }, creado);
         }
 
         /// <summary>
-        /// Cambia el estado de un pedido.
+        /// Avanza el estado de un pedido. Solo se permite pasar al siguiente estado del flujo:
+        /// Pendiente → En Preparacion → Listo → Entregado.
         /// </summary>
         /// <param name="id">Identificador del pedido.</param>
         /// <param name="solicitud">Nuevo estado: Pendiente, En Preparacion, Listo o Entregado.</param>
         /// <response code="204">Estado actualizado.</response>
         /// <response code="400">El estado no es válido.</response>
         /// <response code="404">No existe un pedido con ese id.</response>
+        /// <response code="409">El cambio no respeta el orden del flujo (por ejemplo, retroceder o saltar un paso).</response>
         [HttpPut("{id:int}/estado")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> ActualizarEstado(int id, [FromBody] ActualizarEstadoRequest solicitud)
         {
             var estado = EstadosValidos.FirstOrDefault(e =>
@@ -162,6 +169,21 @@ namespace HeladeriaAPI.Controllers
 
             if (estado is null)
                 return BadRequest($"Estado no válido. Valores permitidos: {string.Join(", ", EstadosValidos)}.");
+
+            var pedido = await _pedidoQueries.ObtenerPorIdAsync(id);
+            if (pedido is null) return NotFound();
+
+            var posicionActual = Array.IndexOf(EstadosValidos, pedido.Estado);
+            var posicionNueva = Array.IndexOf(EstadosValidos, estado);
+
+            if (posicionNueva != posicionActual + 1)
+            {
+                var mensaje = posicionActual == EstadosValidos.Length - 1
+                    ? "El pedido ya fue entregado y no se puede cambiar."
+                    : $"No se puede pasar de \"{pedido.Estado}\" a \"{estado}\". " +
+                      $"El siguiente estado es \"{EstadosValidos[posicionActual + 1]}\".";
+                return Conflict(mensaje);
+            }
 
             var actualizado = await _pedidoRepository.ActualizarEstadoAsync(id, estado);
             if (!actualizado) return NotFound();
@@ -197,17 +219,16 @@ namespace HeladeriaAPI.Controllers
         [Range(1, 1000)]
         public int Cantidad { get; set; }
 
-        /// <summary>Precio por unidad de este ítem.</summary>
-        [Range(0.01, 1000000)]
-        public decimal PrecioUnitario { get; set; }
-
-        /// <summary>Sabores elegidos (ej. "Vainilla, Chocolate").</summary>
+        /// <summary>Sabores elegidos (ej. "Vainilla, Chocolate"). Máximo 200 caracteres.</summary>
+        [MaxLength(200)]
         public string? Sabores { get; set; }
 
-        /// <summary>Toppings o adicionales (ej. "Chispas, Maní").</summary>
+        /// <summary>Toppings o adicionales (ej. "Chispas, Maní"). Máximo 200 caracteres.</summary>
+        [MaxLength(200)]
         public string? Toppings { get; set; }
 
-        /// <summary>Observaciones del cliente (ej. "Sin crema").</summary>
+        /// <summary>Observaciones del cliente (ej. "Sin crema"). Máximo 300 caracteres.</summary>
+        [MaxLength(300)]
         public string? Observaciones { get; set; }
     }
 

@@ -9,5 +9,6 @@ namespace HeladeriaAPI.Query.Interfaces
         Task<IEnumerable<Producto>> ObtenerTodosAsync();
         Task<Producto?> ObtenerPorIdAsync(int id);
         Task<IEnumerable<Producto>> ObtenerPorCategoriaAsync(int categoriaId);
+        Task<IEnumerable<Producto>> ObtenerPorIdsAsync(IEnumerable<int> ids);
     }
 }

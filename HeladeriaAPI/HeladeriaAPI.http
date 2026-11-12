@@ -1,6 +1,47 @@
 @HeladeriaAPI_HostAddress = http://localhost:5152
 
-GET {{HeladeriaAPI_HostAddress}}/weatherforecast/
+GET {{HeladeriaAPI_HostAddress}}/api/Categorias
 Accept: application/json
+
+###
+
+GET {{HeladeriaAPI_HostAddress}}/api/Productos
+Accept: application/json
+
+###
+
+GET {{HeladeriaAPI_HostAddress}}/api/Mesas
+Accept: application/json
+
+###
+
+GET {{HeladeriaAPI_HostAddress}}/api/Pedidos
+Accept: application/json
+
+###
+
+# Crea un pedido. El precio se toma del catálogo y el total se calcula solo.
+POST {{HeladeriaAPI_HostAddress}}/api/Pedidos
+Content-Type: application/json
+
+{
+  "mesaId": 1,
+  "detalles": [
+    { "productoId": 1, "cantidad": 2, "sabores": "Chocolate", "toppings": "Maní", "observaciones": "Sin crema" }
+  ]
+}
+
+###
+
+GET {{HeladeriaAPI_HostAddress}}/api/Pedidos/1/detalles
+Accept: application/json
+
+###
+
+# Solo se puede avanzar al siguiente estado: Pendiente -> En Preparacion -> Listo -> Entregado
+PUT {{HeladeriaAPI_HostAddress}}/api/Pedidos/1/estado
+Content-Type: application/json
+
+{ "estado": "En Preparacion" }
 
 ###

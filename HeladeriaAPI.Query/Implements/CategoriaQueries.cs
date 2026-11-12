@@ -22,7 +22,7 @@ namespace HeladeriaAPI.Query.Implements
             return await _conexion.QueryAsync<Categoria>(sql);
         }
 
-        public async Task<Categoria> ObtenerPorIdAsync(int id)
+        public async Task<Categoria?> ObtenerPorIdAsync(int id)
         {
             const string sql = "SELECT CategoriaId, Nombre FROM Categorias WHERE CategoriaId = @Id";
             return await _conexion.QueryFirstOrDefaultAsync<Categoria>(sql, new { Id = id });

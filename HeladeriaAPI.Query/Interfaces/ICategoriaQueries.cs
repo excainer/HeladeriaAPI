@@ -10,7 +10,7 @@ namespace HeladeriaAPI.Query.Interfaces
     public interface ICategoriaQueries
     {
         Task<IEnumerable<Categoria>> ObtenerTodasAsync();
-        Task<Categoria> ObtenerPorIdAsync(int id);
+        Task<Categoria?> ObtenerPorIdAsync(int id);
     }
 }
 

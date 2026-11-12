@@ -56,15 +56,25 @@ GO
 
 -- Datos de ejemplo (solo si las tablas estan vacias)
 IF NOT EXISTS (SELECT 1 FROM dbo.Categorias)
-    INSERT INTO dbo.Categorias (Nombre) VALUES (N'Helados'), (N'Bebidas');
+    INSERT INTO dbo.Categorias (Nombre)
+    VALUES (N'Helados'), (N'Bebidas'), (N'Postres'), (N'Toppings');
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Productos)
     INSERT INTO dbo.Productos (CategoriaId, Nombre, Precio, Activo)
-    SELECT CategoriaId, N'Helado Chocolate', 5000, 1 FROM dbo.Categorias WHERE Nombre = N'Helados'
-    UNION ALL
-    SELECT CategoriaId, N'Malteada Fresa', 8000, 1 FROM dbo.Categorias WHERE Nombre = N'Bebidas';
+    SELECT c.CategoriaId, p.Nombre, p.Precio, 1
+    FROM (VALUES
+        (N'Helados',  N'Helado de Vainilla',    5000),
+        (N'Helados',  N'Helado de Chocolate',   5500),
+        (N'Helados',  N'Helado de Fresa',       5000),
+        (N'Bebidas',  N'Malteada de Chocolate', 9000),
+        (N'Bebidas',  N'Jugo Natural',          6000),
+        (N'Postres',  N'Brownie',               7000),
+        (N'Toppings', N'Chispas de Chocolate',  1500),
+        (N'Toppings', N'Man' + NCHAR(237),      1000)  -- "Maní" (NCHAR evita problemas de codificación del archivo)
+    ) AS p (Categoria, Nombre, Precio)
+    JOIN dbo.Categorias c ON c.Nombre = p.Categoria;
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Mesas)
     INSERT INTO dbo.Mesas (Numero, Estado)
-    VALUES (1, N'Disponible'), (2, N'Disponible'), (3, N'Disponible');
+    VALUES (1, N'Disponible'), (2, N'Disponible'), (3, N'Disponible'), (4, N'Disponible'), (5, N'Disponible');
 GO

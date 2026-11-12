@@ -51,8 +51,12 @@ namespace HeladeriaAPI
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
-            app.UseHttpsRedirection();
+            else
+            {
+                // En desarrollo el frontend llama a la API por http (proxy de Angular);
+                // redirigir a https ahí rompería esas peticiones.
+                app.UseHttpsRedirection();
+            }
             app.UseAuthorization();
             app.MapControllers();
 

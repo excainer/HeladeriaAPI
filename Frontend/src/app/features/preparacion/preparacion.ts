@@ -112,6 +112,8 @@ export class Preparacion {
       error: (e: unknown) => {
         this.terminar(p.pedidoId);
         this.errorAccion.set(mensajeError(e, 'No se pudo cambiar el estado del pedido.'));
+        // Si otro dispositivo ya lo cambió (409), se recarga la lista para mostrar el estado real.
+        this.refrescar.next();
       },
     });
   }

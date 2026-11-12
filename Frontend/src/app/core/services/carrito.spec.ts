@@ -49,8 +49,8 @@ describe('CarritoService', () => {
     expect(service.aNuevoPedido(3)).toEqual({
       mesaId: 3,
       detalles: [
-        { productoId: 1, cantidad: 1, precioUnitario: 5000, sabores: 'Chocolate, Fresa', toppings: undefined, observaciones: 'Sin crema' },
-        { productoId: 6, cantidad: 1, precioUnitario: 7000, sabores: undefined, toppings: undefined, observaciones: undefined },
+        { productoId: 1, cantidad: 1, sabores: 'Chocolate, Fresa', toppings: undefined, observaciones: 'Sin crema' },
+        { productoId: 6, cantidad: 1, sabores: undefined, toppings: undefined, observaciones: undefined },
       ],
     });
   });

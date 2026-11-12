@@ -33,5 +33,14 @@ namespace HeladeriaAPI.Query.Implements
             const string sql = "SELECT ProductoId, CategoriaId, Nombre, Precio, Activo FROM Productos WHERE CategoriaId = @CategoriaId";
             return await _conexion.QueryAsync<Producto>(sql, new { CategoriaId = categoriaId });
         }
+
+        /// <summary>
+        /// Consulta varios productos a la vez (los ids que no existan simplemente no aparecen).
+        /// </summary>
+        public async Task<IEnumerable<Producto>> ObtenerPorIdsAsync(IEnumerable<int> ids)
+        {
+            const string sql = "SELECT ProductoId, CategoriaId, Nombre, Precio, Activo FROM Productos WHERE ProductoId IN @Ids";
+            return await _conexion.QueryAsync<Producto>(sql, new { Ids = ids.Distinct().ToArray() });
+        }
     }
 }

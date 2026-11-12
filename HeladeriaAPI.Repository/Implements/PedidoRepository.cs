@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Dapper.Contrib.Extensions;
@@ -34,6 +36,46 @@ namespace HeladeriaAPI.Repository.Implements
 
             var id = await _conexion.InsertAsync(pedido);
             return (int)id;
+        }
+
+        /// <summary>
+        /// Crea un pedido junto con todos sus detalles en una sola transacción: o se guarda todo
+        /// o no se guarda nada. El Total se calcula como la suma de Cantidad x PrecioUnitario.
+        /// </summary>
+        public async Task<int> CrearConDetallesAsync(Pedido pedido, IEnumerable<DetallePedido> detalles)
+        {
+            var lista = detalles.ToList();
+
+            if (pedido.Fecha == default)
+                pedido.Fecha = DateTime.Now;
+
+            if (string.IsNullOrWhiteSpace(pedido.Estado))
+                pedido.Estado = "Pendiente";
+
+            pedido.Total = lista.Sum(d => d.Cantidad * d.PrecioUnitario);
+
+            if (_conexion.State != ConnectionState.Open)
+                _conexion.Open();
+
+            using var transaccion = _conexion.BeginTransaction();
+            try
+            {
+                var pedidoId = (int)await _conexion.InsertAsync(pedido, transaccion);
+
+                foreach (var detalle in lista)
+                {
+                    detalle.PedidoId = pedidoId;
+                    await _conexion.InsertAsync(detalle, transaccion);
+                }
+
+                transaccion.Commit();
+                return pedidoId;
+            }
+            catch
+            {
+                transaccion.Rollback();
+                throw;
+            }
         }
 
         /// <summary>
