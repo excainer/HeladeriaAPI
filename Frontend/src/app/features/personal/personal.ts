@@ -16,6 +16,7 @@ export class Personal {
     { ruta: 'dashboard', texto: 'Resumen' },
     { ruta: 'productos', texto: 'Productos' },
     { ruta: 'categorias', texto: 'Categorías' },
+    { ruta: 'tamanos', texto: 'Tamaños' },
     { ruta: 'mesas', texto: 'Mesas' },
   ];
 }

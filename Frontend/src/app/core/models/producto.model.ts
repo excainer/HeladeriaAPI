@@ -5,3 +5,6 @@ export interface Producto {
   precio: number;
   activo: boolean;
 }
+
+/** Cuerpo de POST/PUT /api/Productos. */
+export type DatosProducto = Omit<Producto, 'productoId'>;

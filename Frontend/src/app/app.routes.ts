@@ -63,6 +63,11 @@ export const routes: Routes = [
           import('./features/categorias/categorias').then(m => m.Categorias)
       },
       {
+        path: 'tamanos',
+        loadComponent: () =>
+          import('./features/tamanos/tamanos').then(m => m.Tamanos)
+      },
+      {
         path: 'mesas',
         loadComponent: () =>
           import('./features/mesas/mesas').then(m => m.Mesas)

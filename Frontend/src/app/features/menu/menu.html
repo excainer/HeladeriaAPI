@@ -24,21 +24,26 @@
 
     <ul class="productos">
       @for (producto of productosVisibles(); track producto.productoId) {
+        @let tamanos = tamanosDe(producto);
+        @let personalizable = esPersonalizable(producto);
         <li class="producto" [class.producto--abierto]="abierto() === producto.productoId">
           <div class="producto__fila">
             <h2 class="producto__nombre">{{ producto.nombre }}</h2>
-            <p class="producto__precio">{{ producto.precio | pesos }}</p>
+            <p class="producto__precio">
+              @if (tamanos.length > 1) { <span class="desde">Desde</span> }
+              {{ precioDesde(producto) | pesos }}
+            </p>
             <div class="producto__acciones">
-              @if (esPersonalizable(producto)) {
+              @if (personalizable || tamanos.length > 0) {
                 <button
                   type="button"
-                  class="boton boton--secundario"
+                  [class]="tamanos.length > 0 && abierto() !== producto.productoId ? 'boton' : 'boton boton--secundario'"
                   [attr.aria-expanded]="abierto() === producto.productoId"
                   [attr.aria-controls]="'panel-' + producto.productoId"
                   (click)="alternarPanel(producto)"
-                >{{ abierto() === producto.productoId ? 'Cerrar' : 'Personalizar' }}</button>
+                >{{ abierto() === producto.productoId ? 'Cerrar' : (personalizable ? 'Personalizar' : 'Elegir tamaño') }}</button>
               }
-              @if (abierto() !== producto.productoId) {
+              @if (tamanos.length === 0 && abierto() !== producto.productoId) {
                 <button type="button" class="boton" (click)="agregarDirecto(producto)">Agregar</button>
               }
             </div>
@@ -46,33 +51,52 @@
 
           @if (abierto() === producto.productoId) {
             <div class="panel" [id]="'panel-' + producto.productoId">
-              <fieldset class="grupo">
-                <legend>Sabores</legend>
-                <div class="opciones">
-                  @for (sabor of sabores; track sabor) {
-                    <button
-                      type="button"
-                      class="chip"
-                      [attr.aria-pressed]="saboresElegidos().includes(sabor)"
-                      (click)="alternarOpcion(saboresElegidos, sabor, sabores)"
-                    >{{ sabor }}</button>
-                  }
-                </div>
-              </fieldset>
+              @if (tamanos.length > 0) {
+                <fieldset class="grupo">
+                  <legend>Tamaño</legend>
+                  <div class="opciones">
+                    @for (tamano of tamanos; track tamano.tamanoId) {
+                      @let extra = diferencia(producto, tamano);
+                      <button
+                        type="button"
+                        class="chip"
+                        [attr.aria-pressed]="tamanoElegido() === tamano.tamanoId"
+                        (click)="elegirTamano(tamano)"
+                      >{{ tamano.nombre }}@if (extra > 0) {<span class="extra"> +{{ extra | pesos }}</span>}</button>
+                    }
+                  </div>
+                </fieldset>
+              }
 
-              <fieldset class="grupo">
-                <legend>Toppings</legend>
-                <div class="opciones">
-                  @for (topping of toppings; track topping) {
-                    <button
-                      type="button"
-                      class="chip"
-                      [attr.aria-pressed]="toppingsElegidos().includes(topping)"
-                      (click)="alternarOpcion(toppingsElegidos, topping, toppings)"
-                    >{{ topping }}</button>
-                  }
-                </div>
-              </fieldset>
+              @if (personalizable) {
+                <fieldset class="grupo">
+                  <legend>Sabores</legend>
+                  <div class="opciones">
+                    @for (sabor of sabores; track sabor) {
+                      <button
+                        type="button"
+                        class="chip"
+                        [attr.aria-pressed]="saboresElegidos().includes(sabor)"
+                        (click)="alternarOpcion(saboresElegidos, sabor, sabores)"
+                      >{{ sabor }}</button>
+                    }
+                  </div>
+                </fieldset>
+
+                <fieldset class="grupo">
+                  <legend>Toppings</legend>
+                  <div class="opciones">
+                    @for (topping of toppings; track topping) {
+                      <button
+                        type="button"
+                        class="chip"
+                        [attr.aria-pressed]="toppingsElegidos().includes(topping)"
+                        (click)="alternarOpcion(toppingsElegidos, topping, toppings)"
+                      >{{ topping }}</button>
+                    }
+                  </div>
+                </fieldset>
+              }
 
               <div class="grupo">
                 <label for="notas-{{ producto.productoId }}">Notas para cocina (opcional)</label>
@@ -87,8 +111,8 @@
                 ></textarea>
               </div>
 
-              <button type="button" class="boton" (click)="agregarPersonalizado(producto)">
-                Agregar al pedido · {{ producto.precio | pesos }}
+              <button type="button" class="boton" (click)="agregarDesdePanel(producto)">
+                Agregar al pedido · {{ precioElegido(producto) | pesos }}
               </button>
             </div>
           }

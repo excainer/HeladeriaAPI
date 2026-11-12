@@ -20,17 +20,20 @@ namespace HeladeriaAPI.Controllers
         private readonly IPedidoQueries _pedidoQueries;
         private readonly IMesaQueries _mesaQueries;
         private readonly IProductoQueries _productoQueries;
+        private readonly ITamanoQueries _tamanoQueries;
         private readonly IPedidoRepository _pedidoRepository;
 
         public PedidosController(
             IPedidoQueries pedidoQueries,
             IMesaQueries mesaQueries,
             IProductoQueries productoQueries,
+            ITamanoQueries tamanoQueries,
             IPedidoRepository pedidoRepository)
         {
             _pedidoQueries = pedidoQueries;
             _mesaQueries = mesaQueries;
             _productoQueries = productoQueries;
+            _tamanoQueries = tamanoQueries;
             _pedidoRepository = pedidoRepository;
         }
 
@@ -103,7 +106,7 @@ namespace HeladeriaAPI.Controllers
         /// </summary>
         /// <param name="solicitud">Mesa y lista de ítems del pedido.</param>
         /// <response code="201">Pedido creado.</response>
-        /// <response code="400">Los datos no son válidos o algún producto no está disponible.</response>
+        /// <response code="400">Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.</response>
         /// <response code="404">No existe la mesa o alguno de los productos indicados.</response>
         [HttpPost]
         [ProducesResponseType(typeof(Pedido), StatusCodes.Status201Created)]
@@ -119,6 +122,11 @@ namespace HeladeriaAPI.Controllers
                     solicitud.Detalles.Select(d => d.ProductoId)))
                 .ToDictionary(p => p.ProductoId);
 
+            // Tamaños de todas las categorías involucradas, en una sola consulta.
+            var tamanos = (await _tamanoQueries.ObtenerPorCategoriasAsync(
+                    productos.Values.Select(p => p.CategoriaId)))
+                .ToList();
+
             var detalles = new List<DetallePedido>();
             foreach (var item in solicitud.Detalles)
             {
@@ -128,11 +136,30 @@ namespace HeladeriaAPI.Controllers
                 if (!producto.Activo)
                     return BadRequest($"El producto \"{producto.Nombre}\" no está disponible.");
 
+                var tamanosDelProducto = tamanos
+                    .Where(t => t.CategoriaId == producto.CategoriaId && t.Activo)
+                    .ToList();
+
+                Tamano? tamano = null;
+                if (item.TamanoId is not null)
+                {
+                    tamano = tamanosDelProducto.FirstOrDefault(t => t.TamanoId == item.TamanoId);
+                    if (tamano is null)
+                        return BadRequest($"El tamaño {item.TamanoId} no está disponible para \"{producto.Nombre}\".");
+                }
+                else if (tamanosDelProducto.Count > 0)
+                {
+                    var opciones = string.Join(", ", tamanosDelProducto.Select(t => $"{t.Nombre} ({t.TamanoId})"));
+                    return BadRequest($"Elige un tamaño para \"{producto.Nombre}\": {opciones}.");
+                }
+
                 detalles.Add(new DetallePedido
                 {
                     ProductoId = producto.ProductoId,
+                    TamanoId = tamano?.TamanoId,
                     Cantidad = item.Cantidad,
-                    PrecioUnitario = producto.Precio,
+                    // Precio del catálogo: base del producto + adicional del tamaño elegido.
+                    PrecioUnitario = producto.Precio + (tamano?.PrecioAdicional ?? 0),
                     Sabores = item.Sabores,
                     Toppings = item.Toppings,
                     Observaciones = item.Observaciones
@@ -214,6 +241,13 @@ namespace HeladeriaAPI.Controllers
         /// <summary>Producto base o tamaño seleccionado.</summary>
         [Range(1, int.MaxValue)]
         public int ProductoId { get; set; }
+
+        /// <summary>
+        /// Tamaño elegido (ver <c>GET /api/Productos/{id}</c>). Obligatorio si la categoría
+        /// del producto tiene tamaños activos; se omite si no los tiene.
+        /// </summary>
+        [Range(1, int.MaxValue)]
+        public int? TamanoId { get; set; }
 
         /// <summary>Cantidad solicitada.</summary>
         [Range(1, 1000)]

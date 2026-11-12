@@ -45,5 +45,21 @@ namespace HeladeriaAPI.Controllers
             if (mesa is null) return NotFound();
             return Ok(mesa);
         }
+
+        /// <summary>
+        /// Obtiene una mesa por su número visible (el que trae el código QR de la mesa).
+        /// </summary>
+        /// <param name="numero">Número de la mesa.</param>
+        /// <response code="200">Devuelve la mesa.</response>
+        /// <response code="404">No existe una mesa con ese número.</response>
+        [HttpGet("numero/{numero:int}")]
+        [ProducesResponseType(typeof(Mesa), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObtenerPorNumero(int numero)
+        {
+            var mesa = await _mesaQueries.ObtenerPorNumeroAsync(numero);
+            if (mesa is null) return NotFound($"No existe la mesa número {numero}.");
+            return Ok(mesa);
+        }
     }
 }

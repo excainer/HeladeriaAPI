@@ -78,7 +78,7 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<IEnumerable<DetallePedido>> ObtenerDetallesPorPedidoAsync(int pedidoId)
         {
             const string sql = @"
-                SELECT DetallePedidoId, PedidoId, ProductoId, Cantidad,
+                SELECT DetallePedidoId, PedidoId, ProductoId, TamanoId, Cantidad,
                        Sabores, Toppings, Observaciones, PrecioUnitario
                 FROM DetallesPedido
                 WHERE PedidoId = @PedidoId

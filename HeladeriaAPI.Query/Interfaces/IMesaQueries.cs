@@ -9,5 +9,6 @@ namespace HeladeriaAPI.Query.Interfaces
     {
         Task<IEnumerable<Mesa>> ObtenerTodasAsync();
         Task<Mesa?> ObtenerPorIdAsync(int id);
+        Task<Mesa?> ObtenerPorNumeroAsync(int numero);
     }
 }

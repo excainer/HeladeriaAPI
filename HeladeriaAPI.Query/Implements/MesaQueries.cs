@@ -27,5 +27,14 @@ namespace HeladeriaAPI.Query.Implements
             const string sql = "SELECT MesaId, Numero, Estado FROM Mesas WHERE MesaId = @Id";
             return await _conexion.QueryFirstOrDefaultAsync<Mesa>(sql, new { Id = id });
         }
+
+        /// <summary>
+        /// Busca una mesa por su número visible (el que trae el código QR).
+        /// </summary>
+        public async Task<Mesa?> ObtenerPorNumeroAsync(int numero)
+        {
+            const string sql = "SELECT TOP 1 MesaId, Numero, Estado FROM Mesas WHERE Numero = @Numero ORDER BY MesaId";
+            return await _conexion.QueryFirstOrDefaultAsync<Mesa>(sql, new { Numero = numero });
+        }
     }
 }

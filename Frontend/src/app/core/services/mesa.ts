@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { map } from 'rxjs';
+import { Observable, catchError, of, throwError } from 'rxjs';
 import { Api } from './api';
 import { Mesa } from '../models/mesa.model';
 
@@ -21,11 +21,14 @@ export class MesaService {
   }
 
   /**
-   * La API solo busca mesas por id, pero el cliente conoce el número de su mesa.
-   * Se busca en la lista completa; devuelve undefined si no existe.
+   * Busca la mesa por su número visible (el del código QR), no por su id.
+   * Devuelve undefined si no existe; cualquier otro error se propaga.
    */
-  obtenerPorNumero(numero: number) {
-    return this.obtenerTodos().pipe(map((mesas) => mesas.find((mesa) => mesa.numero === numero)));
+  obtenerPorNumero(numero: number): Observable<Mesa | undefined> {
+    return this.api.get<Mesa>(`${this.endpoint}/numero/${numero}`).pipe(
+      catchError((e: unknown) =>
+        (e as { status?: number }).status === 404 ? of(undefined) : throwError(() => e)),
+    );
   }
 
 }

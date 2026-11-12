@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Api } from './api';
-import { Categoria } from '../models/categoria.model';
+import { Categoria, DatosCategoria } from '../models/categoria.model';
 
 @Injectable({
   providedIn: 'root',
@@ -17,6 +17,14 @@ export class CategoriaService {
 
   obtenerPorId(id: number) {
     return this.api.get<Categoria>(`${this.endpoint}/${id}`);
+  }
+
+  crear(datos: DatosCategoria) {
+    return this.api.post<Categoria>(this.endpoint, datos);
+  }
+
+  actualizar(id: number, datos: DatosCategoria) {
+    return this.api.put<Categoria>(`${this.endpoint}/${id}`, datos);
   }
 
 }

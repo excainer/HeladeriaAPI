@@ -30,7 +30,7 @@
               </div>
               @for (d of items(p); track d.detallePedidoId) {
                 <div class="item">
-                  <strong>{{ d.cantidad }} × {{ nombre(d.productoId) }}</strong>
+                  <strong>{{ d.cantidad }} × {{ descripcion(d) }}</strong>
                   @if (d.sabores) { <div>Sabores: {{ d.sabores }}</div> }
                   @if (d.toppings) { <div>Toppings: {{ d.toppings }}</div> }
                   @if (d.observaciones) { <div>{{ d.observaciones }}</div> }

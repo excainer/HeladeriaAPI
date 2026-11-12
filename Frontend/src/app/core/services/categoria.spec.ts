@@ -26,4 +26,17 @@ describe('CategoriaService', () => {
     service.obtenerPorId(2).subscribe();
     http.expectOne('/api/Categorias/2').flush({});
   });
+
+  it('crea y renombra categorías', () => {
+    service.crear({ nombre: 'Café' }).subscribe();
+    const crear = http.expectOne('/api/Categorias');
+    expect(crear.request.method).toBe('POST');
+    expect(crear.request.body).toEqual({ nombre: 'Café' });
+    crear.flush({ categoriaId: 5, nombre: 'Café' });
+
+    service.actualizar(5, { nombre: 'Cafetería' }).subscribe();
+    const editar = http.expectOne('/api/Categorias/5');
+    expect(editar.request.method).toBe('PUT');
+    editar.flush({ categoriaId: 5, nombre: 'Cafetería' });
+  });
 });

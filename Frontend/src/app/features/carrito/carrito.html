@@ -12,6 +12,9 @@
         <li class="linea">
           <div class="linea__datos">
             <h2>{{ linea.producto.nombre }}</h2>
+            @if (linea.tamano) {
+              <p>Tamaño: {{ linea.tamano.nombre }}</p>
+            }
             @if (linea.sabores.length) {
               <p>Sabores: {{ linea.sabores.join(', ') }}</p>
             }
@@ -30,7 +33,7 @@
           </div>
 
           <p class="linea__subtotal">
-            {{ linea.cantidad * linea.producto.precio | pesos }}
+            {{ linea.cantidad * precioUnitario(linea) | pesos }}
           </p>
 
           <button type="button" class="quitar" [attr.aria-label]="'Quitar ' + linea.producto.nombre + ' del pedido'" (click)="quitar(linea)">Quitar</button>

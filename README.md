@@ -6,14 +6,27 @@
 
 API REST en .NET 10 para gestionar pedidos de una heladería. Usa Dapper (Dapper.Contrib) con SQL Server y Swagger para probar los endpoints. Incluye un frontend en Angular (HeladApp) para clientes y personal.
 
+## Equipo
+
+Proyecto final del curso **Construcción de Software**, orientado por el profesor **Omar Andrés Cardona Zapata**. Desarrollado por:
+
+- **Pedro Vidal**
+- **Alexander Vélez**
+- **Juan Silva**
+- **Alejandro Ortega**
+- **Juan Gallo**
+
+El repositorio original del equipo es [avelezfi/HeladeriaAPI](https://github.com/avelezfi/HeladeriaAPI). Esta copia continúa el proyecto con mejoras posteriores a la entrega (tamaños, administración del catálogo y más pruebas); el historial de commits conserva el trabajo de cada integrante.
+
 ## Estructura
 
 - `HeladeriaAPI`: proyecto Web API (Controllers, Swagger/XML, `Program.cs`).
 - `HeladeriaAPI.Models`: clases de las tablas.
 - `HeladeriaAPI.Query`: consultas de lectura (SELECT).
-- `HeladeriaAPI.Repository`: operaciones de escritura (crear pedido, actualizar estado).
-- `BaseDeDatos/script.sql`: script para crear la base de datos.
+- `HeladeriaAPI.Repository`: operaciones de escritura (pedidos y catálogo).
+- `BaseDeDatos/script.sql`: script para crear (o actualizar) la base de datos.
 - `Frontend`: aplicación Angular (ver la sección "Frontend").
+- `docs/openapi.yaml`: especificación OpenAPI de la API, exportada de Swagger.
 
 ## Requisitos
 
@@ -23,12 +36,67 @@ API REST en .NET 10 para gestionar pedidos de una heladería. Usa Dapper (Dapper
 
 ## 1. Crear la base de datos
 
-Ejecuta `BaseDeDatos/script.sql` en SQL Server Management Studio (o `sqlcmd`). Crea la base `HeladeriaAPI_DB`, sus tablas y datos de ejemplo (4 categorías, 8 productos y 5 mesas). Se puede ejecutar más de una vez sin duplicar datos.
+Ejecuta `BaseDeDatos/script.sql` en SQL Server Management Studio (o `sqlcmd`). Crea la base `HeladeriaAPI_DB`, sus tablas y datos de ejemplo (4 categorías, 8 productos, 5 tamaños y 5 mesas). Se puede ejecutar más de una vez sin duplicar datos, y **también actualiza una base creada con una versión anterior** (agrega la tabla de tamaños sin borrar los pedidos existentes).
 
 Con `sqlcmd`, por ejemplo usando LocalDB (viene con Visual Studio):
 
 ```
 sqlcmd -S "(localdb)\MSSQLLocalDB" -E -i BaseDeDatos\script.sql
+```
+
+### Modelo de datos
+
+```mermaid
+erDiagram
+    Categorias ||--o{ Productos : agrupa
+    Categorias ||--o{ Tamanos : "ofrece"
+    Mesas ||--o{ Pedidos : recibe
+    Pedidos ||--|{ DetallesPedido : contiene
+    Productos ||--o{ DetallesPedido : "se pide en"
+    Tamanos |o--o{ DetallesPedido : "se elige en"
+
+    Categorias {
+        int CategoriaId PK
+        string Nombre
+    }
+    Productos {
+        int ProductoId PK
+        int CategoriaId FK
+        string Nombre
+        decimal Precio
+        bool Activo
+    }
+    Tamanos {
+        int TamanoId PK
+        int CategoriaId FK
+        string Nombre
+        decimal PrecioAdicional
+        int Orden
+        bool Activo
+    }
+    Mesas {
+        int MesaId PK
+        int Numero
+        string Estado
+    }
+    Pedidos {
+        int PedidoId PK
+        int MesaId FK
+        datetime Fecha
+        string Estado
+        decimal Total
+    }
+    DetallesPedido {
+        int DetallePedidoId PK
+        int PedidoId FK
+        int ProductoId FK
+        int TamanoId FK "opcional"
+        int Cantidad
+        string Sabores
+        string Toppings
+        string Observaciones
+        decimal PrecioUnitario
+    }
 ```
 
 ## 2. Configurar la cadena de conexión
@@ -48,34 +116,43 @@ El puerto `1433` es el predeterminado de SQL Server. Cámbialo si tu instancia u
 dotnet run --project HeladeriaAPI\HeladeriaAPI.csproj --launch-profile http
 ```
 
-Abre `http://localhost:5152/swagger`. El archivo `HeladeriaAPI/HeladeriaAPI.http` trae ejemplos listos para probar desde Visual Studio o VS Code.
+Abre `http://localhost:5152/swagger`. El archivo `HeladeriaAPI/HeladeriaAPI.http` trae ejemplos listos para probar desde Visual Studio o VS Code, y la especificación completa está en [`docs/openapi.yaml`](docs/openapi.yaml).
 
 ## Endpoints
 
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/api/Categorias`, `/api/Categorias/{id}` | Consulta de categorías |
+| POST · PUT | `/api/Categorias`, `/api/Categorias/{id}` | Crear y renombrar categorías |
+| GET | `/api/Productos?categoriaId=`, `/api/Productos/categoria/{categoriaId}` | Lista de productos (filtro opcional por categoría) |
+| GET | `/api/Productos/{id}` | Detalle de un producto **con sus tamaños** |
+| POST · PUT | `/api/Productos`, `/api/Productos/{id}` | Crear y editar productos (precio, categoría, disponibilidad) |
+| GET | `/api/Tamanos?categoriaId=`, `/api/Tamanos/{id}` | Consulta de tamaños |
+| POST · PUT | `/api/Tamanos`, `/api/Tamanos/{id}` | Crear y editar tamaños |
 | GET | `/api/Mesas`, `/api/Mesas/{id}` | Consulta de mesas |
-| GET | `/api/Productos`, `/api/Productos/{id}`, `/api/Productos/categoria/{categoriaId}` | Consulta de productos |
+| GET | `/api/Mesas/numero/{numero}` | Mesa por su número visible (el del código QR) |
 | GET | `/api/Pedidos`, `/api/Pedidos/{id}`, `/api/Pedidos/estado/{estado}`, `/api/Pedidos/mesa/{mesaId}`, `/api/Pedidos/{id}/detalles` | Consulta de pedidos |
 | POST | `/api/Pedidos` | Crea un pedido con sus detalles |
 | PUT | `/api/Pedidos/{id}/estado` | Avanza el estado del pedido |
 
 ### Reglas de negocio
 
-- **Precio:** el cliente no envía precios. La API toma el precio de cada producto de la base de datos y calcula el total, así nadie puede alterar lo que paga.
+- **Precio:** el cliente no envía precios. La API calcula cada ítem como *precio del producto + adicional del tamaño* con los valores de la base de datos, así nadie puede alterar lo que paga.
+- **Tamaños:** se definen por categoría (por ejemplo, Helados: Pequeño, Mediano, Grande). Si la categoría de un producto tiene tamaños activos, hay que elegir uno; si no tiene, el producto se pide con su precio base.
+- **Catálogo:** no se repiten nombres (categorías en general; productos y tamaños dentro de su categoría). Productos y tamaños no se borran: se desactivan, para conservar el histórico de pedidos.
 - **Productos:** si un producto no existe la API responde `404`; si está inactivo, `400`.
 - **Transacción:** el pedido y todos sus detalles se guardan juntos; si algo falla no queda nada a medias.
 - **Estados:** `Pendiente` → `En Preparacion` → `Listo` → `Entregado`. Solo se puede avanzar al siguiente; retroceder o saltar un paso responde `409`.
 - **Textos:** `sabores` y `toppings` admiten hasta 200 caracteres y `observaciones` hasta 300.
 
-Ejemplo de cuerpo para `POST /api/Pedidos`:
+Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que no maneja tamaños):
 
 ```json
 {
   "mesaId": 1,
   "detalles": [
-    { "productoId": 1, "cantidad": 2, "sabores": "Chocolate", "toppings": "Maní", "observaciones": "Sin crema" }
+    { "productoId": 1, "tamanoId": 3, "cantidad": 2, "sabores": "Chocolate", "toppings": "Maní", "observaciones": "Sin crema" },
+    { "productoId": 6, "cantidad": 1 }
   ]
 }
 ```
@@ -84,8 +161,8 @@ Ejemplo de cuerpo para `POST /api/Pedidos`:
 
 Aplicación Angular en la carpeta `Frontend`. Tiene dos zonas:
 
-- **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), arma el pedido y sigue su estado en tiempo real.
-- **Personal** (`http://localhost:4200/personal`): cocina (avanza los estados), historial de pedidos, resumen, productos, categorías y mesas.
+- **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), elige tamaño, sabores y toppings, arma el pedido y sigue su estado en tiempo real.
+- **Personal** (`http://localhost:4200/personal`): cocina (avanza los estados), historial de pedidos, resumen y **administración** de productos, categorías y tamaños.
 
 Con la API corriendo (paso 3):
 
@@ -97,7 +174,7 @@ npm start
 
 `npm start` redirige las llamadas a `/api` hacia `http://localhost:5152` (archivo `proxy.conf.json`), así que no hace falta configurar CORS.
 
-Para trabajar en el frontend sin base de datos hay una API falsa con los mismos datos de ejemplo:
+Para trabajar en el frontend sin base de datos hay una API falsa con los mismos datos y reglas:
 
 ```
 npm run mock        (en una terminal, puerto 5153)

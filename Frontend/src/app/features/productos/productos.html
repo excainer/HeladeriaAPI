@@ -1,5 +1,50 @@
 <section class="lectura">
-  <h1>Productos</h1>
+  <div class="encabezado">
+    <h1>Productos</h1>
+    @if (!cargando() && !error() && editando() === null) {
+      <button type="button" class="boton" (click)="nuevo()">Nuevo producto</button>
+    }
+  </div>
+
+  @if (aviso()) {
+    <p class="mensaje-exito" role="status">{{ aviso() }}</p>
+  }
+
+  @if (editando() !== null) {
+    <form class="formulario" (submit)="$event.preventDefault(); guardar()" aria-labelledby="titulo-formulario">
+      <h2 id="titulo-formulario">{{ editando() === 0 ? 'Nuevo producto' : 'Editar producto' }}</h2>
+      <div class="campos">
+        <label class="campo">
+          Nombre
+          <input #campoNombre type="text" maxlength="100" required [value]="nombre()" (input)="nombre.set(campoNombre.value)" />
+        </label>
+        <label class="campo">
+          Categoría
+          <select #campoCategoria (change)="categoriaId.set(+campoCategoria.value)">
+            @for (c of categorias(); track c.categoriaId) {
+              <option [value]="c.categoriaId" [selected]="c.categoriaId === categoriaId()">{{ c.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="campo">
+          Precio base
+          <input #campoPrecio type="number" min="1" step="any" inputmode="numeric" required [value]="precio()" (input)="precio.set(campoPrecio.value)" />
+        </label>
+      </div>
+      <label class="casilla">
+        <input #campoActivo type="checkbox" [checked]="activo()" (change)="activo.set(campoActivo.checked)" />
+        Disponible para pedir
+      </label>
+      @if (errorFormulario()) {
+        <p class="mensaje-error" role="alert">{{ errorFormulario() }}</p>
+      }
+      <div class="acciones">
+        <button type="submit" class="boton" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+        <button type="button" class="boton boton--secundario" (click)="cancelar()">Cancelar</button>
+      </div>
+    </form>
+  }
+
   @if (cargando()) {
     <p role="status">Cargando productos…</p>
   } @else if (error()) {
@@ -8,21 +53,29 @@
       <button type="button" class="boton boton--secundario" (click)="cargar()">Reintentar</button>
     </div>
   } @else {
+    <div class="tabla">
     <table>
       <caption class="solo-lectores">Lista de productos</caption>
-      <thead><tr><th scope="col">Producto</th><th scope="col">Categoría</th><th scope="col">Precio</th><th scope="col">Estado</th></tr></thead>
+      <thead><tr><th scope="col">Producto</th><th scope="col">Categoría</th><th scope="col">Precio base</th><th scope="col">Estado</th><th scope="col"><span class="solo-lectores">Acciones</span></th></tr></thead>
       <tbody>
         @for (p of filas(); track p.productoId) {
-          <tr>
+          <tr [class.inactivo]="!p.activo">
             <th scope="row">{{ p.nombre }}</th>
             <td>{{ p.categoria }}</td>
             <td>{{ p.precio | pesos }}</td>
             <td>{{ p.activo ? 'Disponible' : 'No disponible' }}</td>
+            <td>
+              <div class="acciones">
+              <button type="button" class="boton boton--secundario boton--chico" [attr.aria-label]="'Editar ' + p.nombre" (click)="editar(p)">Editar</button>
+              <button type="button" class="boton boton--secundario boton--chico" [disabled]="guardando()" (click)="alternarActivo(p)">{{ p.activo ? 'Desactivar' : 'Activar' }}</button>
+              </div>
+            </td>
           </tr>
         } @empty {
-          <tr><td colspan="4">No hay productos registrados.</td></tr>
+          <tr><td colspan="5">No hay productos registrados.</td></tr>
         }
       </tbody>
     </table>
+    </div>
   }
 </section>

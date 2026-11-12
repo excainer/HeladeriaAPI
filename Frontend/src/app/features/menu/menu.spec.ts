@@ -22,6 +22,11 @@ const productos = [
   { productoId: 4, categoriaId: 2, nombre: 'Jugo Natural', precio: 6000, activo: true },
   { productoId: 7, categoriaId: 4, nombre: 'Maní', precio: 1000, activo: true },
 ];
+const tamanos = [
+  { tamanoId: 2, categoriaId: 1, nombre: 'Grande', precioAdicional: 3000, orden: 2, activo: true },
+  { tamanoId: 1, categoriaId: 1, nombre: 'Pequeño', precioAdicional: 0, orden: 1, activo: true },
+  { tamanoId: 3, categoriaId: 1, nombre: 'Gigante', precioAdicional: 9000, orden: 3, activo: false },
+];
 
 describe('Menu', () => {
   let http: HttpTestingController;
@@ -38,6 +43,7 @@ describe('Menu', () => {
     const f = TestBed.createComponent(Menu);
     http.expectOne('/api/Categorias').flush(categorias);
     http.expectOne('/api/Productos').flush(productos);
+    http.expectOne('/api/Tamanos').flush(tamanos);
     await f.whenStable();
     return f;
   }
@@ -68,8 +74,10 @@ describe('Menu', () => {
     expect(f.nativeElement.textContent).not.toContain('Helado de Vainilla');
   });
 
-  it('agrega directo al carrito', async () => {
+  it('agrega directo al carrito un producto sin tamaños', async () => {
     const f = await crear();
+    click(f.nativeElement, 'Bebidas');
+    await f.whenStable();
     click(f.nativeElement, 'Agregar');
     await f.whenStable();
     expect(TestBed.inject(CarritoService).cantidadTotal()).toBe(1);
@@ -93,17 +101,46 @@ describe('Menu', () => {
     expect(linea.sabores).toEqual(['Vainilla', 'Fresa']);
     expect(linea.toppings).toEqual(['Maní']);
     expect(linea.observaciones).toBe('Sin crema');
+    // El primer tamaño queda elegido por defecto.
+    expect(linea.tamano?.nombre).toBe('Pequeño');
+  });
+
+  it('un producto con tamaños muestra "Desde" y no se agrega sin abrir el panel', async () => {
+    const f = await crear();
+    const el: HTMLElement = f.nativeElement;
+    expect(el.querySelector('.producto__precio')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('Desde $5.000');
+    expect(textoBotones(el.querySelector('.producto__acciones') as HTMLElement)).toEqual(['Personalizar']);
+  });
+
+  it('elige un tamaño, muestra su precio y lo guarda en el carrito', async () => {
+    const f = await crear();
+    const el: HTMLElement = f.nativeElement;
+    click(el, 'Personalizar');
+    await f.whenStable();
+    const tamanosVisibles = Array.from(el.querySelectorAll('.panel fieldset')[0].querySelectorAll('button')).map((b) => b.textContent!.replace(/\s+/g, ' ').trim());
+    expect(tamanosVisibles).toEqual(['Pequeño', 'Grande +$3.000']); // en orden y sin el inactivo
+    click(el, 'Grande');
+    await f.whenStable();
+    expect(el.textContent).toContain('Agregar al pedido · $8.000');
+    click(el, 'Agregar al pedido');
+    await f.whenStable();
+    const carrito = TestBed.inject(CarritoService);
+    expect(carrito.lineas()[0].tamano).toEqual({ tamanoId: 2, nombre: 'Grande', precioAdicional: 3000 });
+    expect(carrito.total()).toBe(8000);
+    expect(carrito.aNuevoPedido(1).detalles[0].tamanoId).toBe(2);
   });
 
   it('permite reintentar si falla la carga', async () => {
     const f = TestBed.createComponent(Menu);
     http.expectOne('/api/Categorias').flush('x', { status: 500, statusText: 'Error' });
-    http.match('/api/Productos'); // la petición paralela queda cancelada por forkJoin
+    http.match('/api/Productos'); // las peticiones paralelas quedan canceladas por forkJoin
+    http.match('/api/Tamanos');
     await f.whenStable();
     expect(f.nativeElement.querySelector('[role=alert]')).toBeTruthy();
     click(f.nativeElement, 'Reintentar');
     http.expectOne('/api/Categorias').flush(categorias);
     http.expectOne('/api/Productos').flush(productos);
+    http.expectOne('/api/Tamanos').flush(tamanos);
     await f.whenStable();
     expect(f.nativeElement.querySelector('[role=alert]')).toBeNull();
   });

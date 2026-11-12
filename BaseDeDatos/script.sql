@@ -41,17 +41,36 @@ CREATE TABLE dbo.Pedidos (
     Total DECIMAL(10,2) NOT NULL DEFAULT 0
 );
 
+-- Tamaños por categoría (ej. Helados: Pequeño, Mediano, Grande).
+-- PrecioAdicional se suma al precio base del producto.
+IF OBJECT_ID('dbo.Tamanos') IS NULL
+CREATE TABLE dbo.Tamanos (
+    TamanoId INT IDENTITY(1,1) PRIMARY KEY,
+    CategoriaId INT NOT NULL REFERENCES dbo.Categorias(CategoriaId),
+    Nombre NVARCHAR(50) NOT NULL,
+    PrecioAdicional DECIMAL(10,2) NOT NULL DEFAULT 0,
+    Orden INT NOT NULL DEFAULT 0,
+    Activo BIT NOT NULL DEFAULT 1
+);
+
 IF OBJECT_ID('dbo.DetallesPedido') IS NULL
 CREATE TABLE dbo.DetallesPedido (
     DetallePedidoId INT IDENTITY(1,1) PRIMARY KEY,
     PedidoId INT NOT NULL REFERENCES dbo.Pedidos(PedidoId),
     ProductoId INT NOT NULL REFERENCES dbo.Productos(ProductoId),
+    TamanoId INT NULL REFERENCES dbo.Tamanos(TamanoId),
     Cantidad INT NOT NULL,
     Sabores NVARCHAR(200) NULL,
     Toppings NVARCHAR(200) NULL,
     Observaciones NVARCHAR(300) NULL,
     PrecioUnitario DECIMAL(10,2) NOT NULL
 );
+GO
+
+-- Actualización de bases creadas con una versión anterior del script (sin tamaños).
+IF COL_LENGTH('dbo.DetallesPedido', 'TamanoId') IS NULL
+    ALTER TABLE dbo.DetallesPedido
+        ADD TamanoId INT NULL CONSTRAINT FK_DetallesPedido_Tamanos REFERENCES dbo.Tamanos(TamanoId);
 GO
 
 -- Datos de ejemplo (solo si las tablas estan vacias)
@@ -77,4 +96,17 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Productos)
 IF NOT EXISTS (SELECT 1 FROM dbo.Mesas)
     INSERT INTO dbo.Mesas (Numero, Estado)
     VALUES (1, N'Disponible'), (2, N'Disponible'), (3, N'Disponible'), (4, N'Disponible'), (5, N'Disponible');
+
+-- Tamaños de ejemplo: el precio del producto es el del tamaño base y cada tamaño suma su adicional.
+IF NOT EXISTS (SELECT 1 FROM dbo.Tamanos)
+    INSERT INTO dbo.Tamanos (CategoriaId, Nombre, PrecioAdicional, Orden, Activo)
+    SELECT c.CategoriaId, t.Nombre, t.PrecioAdicional, t.Orden, 1
+    FROM (VALUES
+        (N'Helados', N'Peque' + NCHAR(241) + N'o', 0,    1),  -- "Pequeño"
+        (N'Helados', N'Mediano',                   2000, 2),
+        (N'Helados', N'Grande',                    4000, 3),
+        (N'Bebidas', N'Mediano',                   0,    1),
+        (N'Bebidas', N'Grande',                    2500, 2)
+    ) AS t (Categoria, Nombre, PrecioAdicional, Orden)
+    JOIN dbo.Categorias c ON c.Nombre = t.Categoria;
 GO

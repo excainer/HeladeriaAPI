@@ -26,6 +26,11 @@ namespace HeladeriaAPI.Models
         public int ProductoId { get; set; }
 
         /// <summary>
+        /// Tamaño elegido, o null si la categoría del producto no maneja tamaños.
+        /// </summary>
+        public int? TamanoId { get; set; }
+
+        /// <summary>
         /// Cantidad solicitada del producto.
         /// </summary>
         public int Cantidad { get; set; }
@@ -46,7 +51,7 @@ namespace HeladeriaAPI.Models
         public string? Observaciones { get; set; }
 
         /// <summary>
-        /// Precio calculado por unidad de este detalle.
+        /// Precio calculado por unidad de este detalle (precio del producto + adicional del tamaño).
         /// </summary>
         public decimal PrecioUnitario { get; set; }
     }

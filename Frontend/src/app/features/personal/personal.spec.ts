@@ -8,6 +8,6 @@ describe('Personal', () => {
     const f = TestBed.createComponent(Personal);
     await f.whenStable();
     const textos = Array.from<HTMLElement>(f.nativeElement.querySelectorAll('nav a')).map((a) => a.textContent!.trim());
-    expect(textos).toEqual(['Cocina', 'Pedidos', 'Resumen', 'Productos', 'Categorías', 'Mesas']);
+    expect(textos).toEqual(['Cocina', 'Pedidos', 'Resumen', 'Productos', 'Categorías', 'Tamaños', 'Mesas']);
   });
 });

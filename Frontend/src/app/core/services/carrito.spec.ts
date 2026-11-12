@@ -59,4 +59,21 @@ describe('CarritoService', () => {
     service.agregar({ producto: helado });
     expect(JSON.parse(sessionStorage.getItem('heladapp.carrito')!).length).toBe(1);
   });
+  it('cobra el adicional del tamaño y separa líneas por tamaño', () => {
+    const grande = { tamanoId: 3, nombre: 'Grande', precioAdicional: 4000 };
+    service.agregar({ producto: helado, tamano: grande });
+    service.agregar({ producto: helado, tamano: grande });
+    service.agregar({ producto: helado, tamano: { tamanoId: 1, nombre: 'Pequeño', precioAdicional: 0 } });
+    expect(service.lineas().length).toBe(2);
+    expect(service.total()).toBe(2 * 9000 + 5000);
+    expect(service.aNuevoPedido(1).detalles.map((d) => d.tamanoId)).toEqual([3, 1]);
+  });
+
+  it('lee carritos guardados antes de existir los tamaños', () => {
+    sessionStorage.setItem('heladapp.carrito', JSON.stringify([{ id: 'x', producto: brownie, cantidad: 2, sabores: [], toppings: [], observaciones: '' }]));
+    TestBed.resetTestingModule();
+    const nuevo = TestBed.inject(CarritoService);
+    expect(nuevo.total()).toBe(14000);
+    expect(nuevo.aNuevoPedido(1).detalles[0].tamanoId).toBeUndefined();
+  });
 });

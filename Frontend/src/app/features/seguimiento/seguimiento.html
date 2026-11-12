@@ -29,7 +29,7 @@
     <ul class="items">
       @for (d of detalles(); track d.detallePedidoId) {
         <li>
-          <strong>{{ d.cantidad }} × {{ nombre(d.productoId) }}</strong>
+          <strong>{{ d.cantidad }} × {{ descripcion(d) }}</strong>
           @if (d.sabores) { <span>Sabores: {{ d.sabores }}</span> }
           @if (d.toppings) { <span>Toppings: {{ d.toppings }}</span> }
           @if (d.observaciones) { <span>Notas: {{ d.observaciones }}</span> }

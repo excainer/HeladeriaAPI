@@ -17,7 +17,8 @@ Aplicación Angular 21 de la heladería. Consume la API de `HeladeriaAPI` (ver e
 
 - `/` y `/mesa/{numero}`: el cliente elige su mesa.
 - `/menu`, `/carrito`, `/pedido/{id}`: menú, pedido y seguimiento del cliente.
-- `/personal`: cocina, pedidos, resumen, productos, categorías y mesas.
+- `/personal`: cocina, historial de pedidos, resumen y mesas.
+- `/personal/productos`, `/personal/categorias`, `/personal/tamanos`: administración del catálogo (crear, editar, activar y desactivar).
 
 ## Estructura
 

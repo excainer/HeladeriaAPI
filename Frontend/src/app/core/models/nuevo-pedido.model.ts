@@ -4,6 +4,8 @@
  */
 export interface NuevoDetalle {
   productoId: number;
+  /** Obligatorio si la categoría del producto tiene tamaños activos. */
+  tamanoId?: number;
   cantidad: number;
   sabores?: string;
   toppings?: string;

@@ -30,6 +30,7 @@ export class Pedidos {
   protected readonly pedidos = signal<Pedido[]>([]);
   protected readonly mesas = signal<Mesa[]>([]);
   private readonly nombres = signal<Map<number, string>>(new Map());
+  private readonly tamanos = signal<Map<number, string>>(new Map());
 
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -48,6 +49,8 @@ export class Pedidos {
       (this.filtroMesa() === null || p.mesaId === this.filtroMesa())));
 
   constructor() {
+    // Nombres de tamaños aparte: si fallan, el pedido igual se muestra (sin el tamaño).
+    this.catalogo.nombresTamanos$.subscribe({ next: (m) => this.tamanos.set(m), error: () => undefined });
     this.cargar();
   }
 
@@ -74,6 +77,12 @@ export class Pedidos {
 
   protected numeroMesa(mesaId: number): number {
     return this.mesas().find((m) => m.mesaId === mesaId)?.numero ?? mesaId;
+  }
+
+  /** "Helado de Vainilla (Grande)", o solo el nombre si no tiene tamaño. */
+  protected descripcion(d: DetallePedido): string {
+    const tamano = d.tamanoId ? this.tamanos().get(d.tamanoId) : undefined;
+    return tamano ? `${this.nombre(d.productoId)} (${tamano})` : this.nombre(d.productoId);
   }
 
   protected nombre(productoId: number): string {

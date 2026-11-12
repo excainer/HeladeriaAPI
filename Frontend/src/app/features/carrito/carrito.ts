@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { CarritoService, LineaCarrito } from '../../core/services/carrito';
+import { CarritoService, LineaCarrito, precioUnitario } from '../../core/services/carrito';
 import { MesaSesionService } from '../../core/services/mesa-sesion';
 import { PedidoService } from '../../core/services/pedido';
 import { mensajeError } from '../../core/utils/errores';
@@ -20,6 +20,7 @@ export class Carrito {
   private readonly pedidos = inject(PedidoService);
   private readonly router = inject(Router);
 
+  protected readonly precioUnitario = precioUnitario;
   protected readonly enviando = signal(false);
   protected readonly error = signal<string | null>(null);
 

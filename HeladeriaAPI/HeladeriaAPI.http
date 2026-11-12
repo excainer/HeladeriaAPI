@@ -15,19 +15,65 @@ Accept: application/json
 
 ###
 
+# Mesa por su número visible (el que trae el código QR)
+GET {{HeladeriaAPI_HostAddress}}/api/Mesas/numero/3
+Accept: application/json
+
+###
+
+# Productos de una categoría
+GET {{HeladeriaAPI_HostAddress}}/api/Productos?categoriaId=1
+Accept: application/json
+
+###
+
+# Detalle de un producto con los tamaños que se pueden elegir
+GET {{HeladeriaAPI_HostAddress}}/api/Productos/1
+Accept: application/json
+
+###
+
+GET {{HeladeriaAPI_HostAddress}}/api/Tamanos
+Accept: application/json
+
+###
+
+# Administración del catálogo
+POST {{HeladeriaAPI_HostAddress}}/api/Categorias
+Content-Type: application/json
+
+{ "nombre": "Cafetería" }
+
+###
+
+POST {{HeladeriaAPI_HostAddress}}/api/Productos
+Content-Type: application/json
+
+{ "categoriaId": 1, "nombre": "Helado de Mango", "precio": 5200, "activo": true }
+
+###
+
+POST {{HeladeriaAPI_HostAddress}}/api/Tamanos
+Content-Type: application/json
+
+{ "categoriaId": 1, "nombre": "Gigante", "precioAdicional": 6000, "orden": 4, "activo": true }
+
+###
+
 GET {{HeladeriaAPI_HostAddress}}/api/Pedidos
 Accept: application/json
 
 ###
 
-# Crea un pedido. El precio se toma del catálogo y el total se calcula solo.
+# Crea un pedido. El precio se toma del catálogo (producto + tamaño) y el total se calcula solo.
 POST {{HeladeriaAPI_HostAddress}}/api/Pedidos
 Content-Type: application/json
 
 {
   "mesaId": 1,
   "detalles": [
-    { "productoId": 1, "cantidad": 2, "sabores": "Chocolate", "toppings": "Maní", "observaciones": "Sin crema" }
+    { "productoId": 1, "tamanoId": 3, "cantidad": 2, "sabores": "Chocolate", "toppings": "Maní", "observaciones": "Sin crema" },
+    { "productoId": 6, "cantidad": 1 }
   ]
 }
 

@@ -59,7 +59,7 @@
                 <ul>
                   @for (d of detalles(); track d.detallePedidoId) {
                     <li>
-                      {{ d.cantidad }} × {{ nombre(d.productoId) }} · {{ d.precioUnitario | pesos }} c/u
+                      {{ d.cantidad }} × {{ descripcion(d) }} · {{ d.precioUnitario | pesos }} c/u
                       @if (d.sabores) { · Sabores: {{ d.sabores }} }
                       @if (d.toppings) { · Toppings: {{ d.toppings }} }
                       @if (d.observaciones) { · Notas: {{ d.observaciones }} }

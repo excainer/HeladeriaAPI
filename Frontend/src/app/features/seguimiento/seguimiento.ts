@@ -35,6 +35,7 @@ export class Seguimiento {
   protected readonly pedido = signal<Pedido | null>(null);
   protected readonly detalles = signal<DetallePedido[]>([]);
   private readonly nombres = signal<Map<number, string>>(new Map());
+  private readonly tamanos = signal<Map<number, string>>(new Map());
 
   protected readonly cargando = signal(true);
   protected readonly noEncontrado = signal(false);
@@ -51,6 +52,8 @@ export class Seguimiento {
   });
 
   constructor() {
+    // Nombres de tamaños aparte: si fallan, el pedido igual se muestra (sin el tamaño).
+    this.catalogo.nombresTamanos$.subscribe({ next: (m) => this.tamanos.set(m), error: () => undefined });
     const id = Number(inject(ActivatedRoute).snapshot.paramMap.get('id'));
     if (!Number.isInteger(id) || id < 1) {
       this.cargando.set(false);
@@ -58,6 +61,12 @@ export class Seguimiento {
       return;
     }
     this.iniciar(id);
+  }
+
+  /** "Helado de Vainilla (Grande)", o solo el nombre si no tiene tamaño. */
+  protected descripcion(d: DetallePedido): string {
+    const tamano = d.tamanoId ? this.tamanos().get(d.tamanoId) : undefined;
+    return tamano ? `${this.nombre(d.productoId)} (${tamano})` : this.nombre(d.productoId);
   }
 
   protected nombre(productoId: number): string {

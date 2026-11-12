@@ -1,0 +1,975 @@
+openapi: 3.0.4
+info:
+  title: HeladeriaAPI
+  version: '1.0'
+paths:
+  /api/Categorias:
+    get:
+      tags:
+        - Categorias
+      summary: Obtiene la lista de todas las categorías.
+      responses:
+        '200':
+          description: Devuelve la lista de categorías.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Categoria'
+    post:
+      tags:
+        - Categorias
+      summary: Crea una categoría nueva.
+      requestBody:
+        description: Nombre de la categoría.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+      responses:
+        '201':
+          description: Categoría creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categoria'
+        '400':
+          description: Los datos no son válidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe una categoría con ese nombre.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Categorias/{id}':
+    get:
+      tags:
+        - Categorias
+      summary: Obtiene una categoría por su identificador.
+      parameters:
+        - name: id
+          in: path
+          description: Identificador de la categoría.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve la categoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categoria'
+        '404':
+          description: No existe una categoría con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      tags:
+        - Categorias
+      summary: Cambia el nombre de una categoría.
+      parameters:
+        - name: id
+          in: path
+          description: Identificador de la categoría.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Nuevo nombre.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CategoriaRequest'
+      responses:
+        '200':
+          description: Devuelve la categoría actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Categoria'
+        '400':
+          description: Los datos no son válidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe una categoría con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe otra categoría con ese nombre.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/Mesas:
+    get:
+      tags:
+        - Mesas
+      summary: Obtiene la lista de todas las mesas.
+      responses:
+        '200':
+          description: Devuelve la lista de mesas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mesa'
+  '/api/Mesas/{id}':
+    get:
+      tags:
+        - Mesas
+      summary: Obtiene una mesa por su identificador.
+      parameters:
+        - name: id
+          in: path
+          description: Identificador de la mesa.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve la mesa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesa'
+        '404':
+          description: No existe una mesa con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Mesas/numero/{numero}':
+    get:
+      tags:
+        - Mesas
+      summary: Obtiene una mesa por su número visible (el que trae el código QR de la mesa).
+      parameters:
+        - name: numero
+          in: path
+          description: Número de la mesa.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve la mesa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesa'
+        '404':
+          description: No existe una mesa con ese número.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/Pedidos:
+    get:
+      tags:
+        - Pedidos
+      summary: Obtiene la lista de todos los pedidos.
+      responses:
+        '200':
+          description: Devuelve la lista de pedidos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+    post:
+      tags:
+        - Pedidos
+      summary: "Crea un pedido con sus detalles. Queda en estado \"Pendiente\".\r\nEl precio de cada ítem se toma del catálogo (no lo envía el cliente) y el total se calcula solo."
+      requestBody:
+        description: Mesa y lista de ítems del pedido.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearPedidoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearPedidoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearPedidoRequest'
+      responses:
+        '201':
+          description: Pedido creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '400':
+          description: 'Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe la mesa o alguno de los productos indicados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Pedidos/{id}':
+    get:
+      tags:
+        - Pedidos
+      summary: Obtiene un pedido por su identificador.
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del pedido.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve el pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '404':
+          description: No existe un pedido con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Pedidos/estado/{estado}':
+    get:
+      tags:
+        - Pedidos
+      summary: Filtra los pedidos por estado.
+      parameters:
+        - name: estado
+          in: path
+          description: 'Estado del pedido (Pendiente, En Preparacion, Listo, Entregado).'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Devuelve los pedidos con ese estado.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+  '/api/Pedidos/mesa/{mesaId}':
+    get:
+      tags:
+        - Pedidos
+      summary: Obtiene los pedidos de una mesa.
+      parameters:
+        - name: mesaId
+          in: path
+          description: Identificador de la mesa.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve los pedidos de la mesa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pedido'
+  '/api/Pedidos/{id}/detalles':
+    get:
+      tags:
+        - Pedidos
+      summary: Obtiene los detalles (líneas) de un pedido.
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del pedido.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve los detalles del pedido.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DetallePedido'
+  '/api/Pedidos/{id}/estado':
+    put:
+      tags:
+        - Pedidos
+      summary: "Avanza el estado de un pedido. Solo se permite pasar al siguiente estado del flujo:\r\nPendiente → En Preparacion → Listo → Entregado."
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del pedido.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: 'Nuevo estado: Pendiente, En Preparacion, Listo o Entregado.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEstadoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEstadoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarEstadoRequest'
+      responses:
+        '204':
+          description: Estado actualizado.
+        '400':
+          description: El estado no es válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe un pedido con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: 'El cambio no respeta el orden del flujo (por ejemplo, retroceder o saltar un paso).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/Productos:
+    get:
+      tags:
+        - Productos
+      summary: 'Obtiene la lista de productos, con filtro opcional por categoría.'
+      parameters:
+        - name: categoriaId
+          in: query
+          description: 'Si se indica, solo devuelve los productos de esa categoría.'
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve la lista de productos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Producto'
+    post:
+      tags:
+        - Productos
+      summary: Crea un producto en el catálogo.
+      requestBody:
+        description: 'Categoría, nombre, precio base y disponibilidad.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+      responses:
+        '201':
+          description: Producto creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '400':
+          description: Los datos no son válidos o la categoría no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe un producto con ese nombre en la categoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Productos/{id}':
+    get:
+      tags:
+        - Productos
+      summary: 'Obtiene el detalle de un producto, incluidos los tamaños que se pueden elegir.'
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del producto.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve el producto con sus tamaños activos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductoDetalle'
+        '404':
+          description: No existe un producto con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      tags:
+        - Productos
+      summary: "Edita un producto: categoría, nombre, precio base o disponibilidad.\r\nPara \"eliminar\" un producto se marca como no disponible (Activo = false),\r\nasí no se pierde el histórico de pedidos que lo incluyen."
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del producto.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Datos nuevos del producto.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ProductoRequest'
+      responses:
+        '200':
+          description: Devuelve el producto actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '400':
+          description: Los datos no son válidos o la categoría no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe un producto con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe otro producto con ese nombre en la categoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Productos/categoria/{categoriaId}':
+    get:
+      tags:
+        - Productos
+      summary: Obtiene los productos de una categoría (equivale a `GET /api/Productos?categoriaId=`).
+      parameters:
+        - name: categoriaId
+          in: path
+          description: Identificador de la categoría.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve los productos de la categoría.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Producto'
+  /api/Tamanos:
+    get:
+      tags:
+        - Tamanos
+      summary: 'Obtiene los tamaños (activos e inactivos), con filtro opcional por categoría.'
+      parameters:
+        - name: categoriaId
+          in: query
+          description: 'Si se indica, solo devuelve los tamaños de esa categoría.'
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve la lista de tamaños.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tamano'
+    post:
+      tags:
+        - Tamanos
+      summary: Crea un tamaño para los productos de una categoría.
+      requestBody:
+        description: 'Categoría, nombre, precio adicional, orden y disponibilidad.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TamanoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/TamanoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/TamanoRequest'
+      responses:
+        '201':
+          description: Tamaño creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tamano'
+        '400':
+          description: Los datos no son válidos o la categoría no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe un tamaño con ese nombre en la categoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Tamanos/{id}':
+    get:
+      tags:
+        - Tamanos
+      summary: Obtiene un tamaño por su identificador.
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del tamaño.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve el tamaño.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tamano'
+        '404':
+          description: No existe un tamaño con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      tags:
+        - Tamanos
+      summary: "Edita un tamaño. Para dejar de ofrecerlo se marca como inactivo (Activo = false),\r\nasí los pedidos antiguos que lo usan conservan su información."
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del tamaño.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Datos nuevos del tamaño.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TamanoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/TamanoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/TamanoRequest'
+      responses:
+        '200':
+          description: Devuelve el tamaño actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tamano'
+        '400':
+          description: Los datos no son válidos o la categoría no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe un tamaño con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe otro tamaño con ese nombre en la categoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+components:
+  schemas:
+    ActualizarEstadoRequest:
+      required:
+        - estado
+      type: object
+      properties:
+        estado:
+          minLength: 1
+          type: string
+          description: Nuevo estado del pedido.
+      additionalProperties: false
+      description: Datos para cambiar el estado de un pedido.
+    Categoria:
+      type: object
+      properties:
+        categoriaId:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+      additionalProperties: false
+    CategoriaRequest:
+      required:
+        - nombre
+      type: object
+      properties:
+        nombre:
+          maxLength: 100
+          minLength: 1
+          pattern: .*\S.*
+          type: string
+          description: Nombre de la categoría (ej. "Postres"). Máximo 100 caracteres.
+      additionalProperties: false
+      description: Datos para crear o editar una categoría.
+    CrearPedidoRequest:
+      required:
+        - detalles
+      type: object
+      properties:
+        mesaId:
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+          description: Mesa donde se genera el pedido.
+          format: int32
+        detalles:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/DetalleSolicitud'
+          description: Ítems del pedido (mínimo uno).
+      additionalProperties: false
+      description: Datos para crear un pedido.
+    DetallePedido:
+      type: object
+      properties:
+        detallePedidoId:
+          type: integer
+          format: int32
+        pedidoId:
+          type: integer
+          format: int32
+        productoId:
+          type: integer
+          format: int32
+        tamanoId:
+          type: integer
+          format: int32
+          nullable: true
+        cantidad:
+          type: integer
+          format: int32
+        sabores:
+          type: string
+          nullable: true
+        toppings:
+          type: string
+          nullable: true
+        observaciones:
+          type: string
+          nullable: true
+        precioUnitario:
+          type: number
+          format: double
+      additionalProperties: false
+    DetalleSolicitud:
+      type: object
+      properties:
+        productoId:
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+          description: Producto base o tamaño seleccionado.
+          format: int32
+        tamanoId:
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+          description: "Tamaño elegido (ver `GET /api/Productos/{id}`). Obligatorio si la categoría\r\ndel producto tiene tamaños activos; se omite si no los tiene."
+          format: int32
+          nullable: true
+        cantidad:
+          maximum: 1000
+          minimum: 1
+          type: integer
+          description: Cantidad solicitada.
+          format: int32
+        sabores:
+          maxLength: 200
+          type: string
+          description: 'Sabores elegidos (ej. "Vainilla, Chocolate"). Máximo 200 caracteres.'
+          nullable: true
+        toppings:
+          maxLength: 200
+          type: string
+          description: 'Toppings o adicionales (ej. "Chispas, Maní"). Máximo 200 caracteres.'
+          nullable: true
+        observaciones:
+          maxLength: 300
+          type: string
+          description: Observaciones del cliente (ej. "Sin crema"). Máximo 300 caracteres.
+          nullable: true
+      additionalProperties: false
+      description: Ítem de un pedido.
+    Mesa:
+      type: object
+      properties:
+        mesaId:
+          type: integer
+          format: int32
+        numero:
+          type: integer
+          format: int32
+        estado:
+          type: string
+          nullable: true
+      additionalProperties: false
+    Pedido:
+      type: object
+      properties:
+        pedidoId:
+          type: integer
+          format: int32
+        mesaId:
+          type: integer
+          format: int32
+        fecha:
+          type: string
+          format: date-time
+        estado:
+          type: string
+          nullable: true
+        total:
+          type: number
+          format: double
+      additionalProperties: false
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+      additionalProperties: { }
+    Producto:
+      type: object
+      properties:
+        productoId:
+          type: integer
+          format: int32
+        categoriaId:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        precio:
+          type: number
+          format: double
+        activo:
+          type: boolean
+      additionalProperties: false
+    ProductoDetalle:
+      type: object
+      properties:
+        productoId:
+          type: integer
+          format: int32
+        categoriaId:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        precio:
+          type: number
+          format: double
+        activo:
+          type: boolean
+        tamanos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tamano'
+          description: Tamaños activos de la categoría del producto (vacío si no maneja tamaños).
+          nullable: true
+      additionalProperties: false
+      description: Producto con los tamaños que se pueden elegir para él.
+    ProductoRequest:
+      required:
+        - nombre
+      type: object
+      properties:
+        categoriaId:
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+          description: Categoría a la que pertenece.
+          format: int32
+        nombre:
+          maxLength: 100
+          minLength: 1
+          pattern: .*\S.*
+          type: string
+          description: Nombre del producto. Máximo 100 caracteres.
+        precio:
+          maximum: 99999999
+          minimum: 0.01
+          type: number
+          description: 'Precio base (el del tamaño más pequeño, si la categoría maneja tamaños).'
+          format: double
+        activo:
+          type: boolean
+          description: 'Si el producto se puede pedir. Por defecto, sí.'
+      additionalProperties: false
+      description: Datos para crear o editar un producto.
+    Tamano:
+      type: object
+      properties:
+        tamanoId:
+          type: integer
+          format: int32
+        categoriaId:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+          nullable: true
+        precioAdicional:
+          type: number
+          format: double
+        orden:
+          type: integer
+          format: int32
+        activo:
+          type: boolean
+      additionalProperties: false
+    TamanoRequest:
+      required:
+        - nombre
+      type: object
+      properties:
+        categoriaId:
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+          description: Categoría a cuyos productos aplica.
+          format: int32
+        nombre:
+          maxLength: 50
+          minLength: 1
+          pattern: .*\S.*
+          type: string
+          description: Nombre del tamaño (ej. "Grande"). Máximo 50 caracteres.
+        precioAdicional:
+          maximum: 99999999
+          minimum: 0
+          type: number
+          description: Valor que se suma al precio base del producto (0 o más).
+          format: double
+        orden:
+          maximum: 1000
+          minimum: 0
+          type: integer
+          description: Posición en la que se muestra (de menor a mayor).
+          format: int32
+        activo:
+          type: boolean
+          description: 'Si el tamaño se puede elegir. Por defecto, sí.'
+      additionalProperties: false
+      description: Datos para crear o editar un tamaño.
+tags:
+  - name: Categorias
+  - name: Mesas
+  - name: Pedidos
+  - name: Productos
+  - name: Tamanos

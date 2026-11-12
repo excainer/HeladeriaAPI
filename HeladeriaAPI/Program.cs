@@ -39,10 +39,14 @@ namespace HeladeriaAPI
             builder.Services.AddScoped<IProductoQueries, ProductoQueries>();
             builder.Services.AddScoped<IMesaQueries, MesaQueries>();
             builder.Services.AddScoped<IPedidoQueries, PedidoQueries>();
+            builder.Services.AddScoped<ITamanoQueries, TamanoQueries>();
 
             // Capa Repository (escritura)
             builder.Services.AddScoped<IPedidoRepository, PedidoRepository>();
             builder.Services.AddScoped<IDetallePedidoRepository, DetallePedidoRepository>();
+            builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+            builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+            builder.Services.AddScoped<ITamanoRepository, TamanoRepository>();
 
             var app = builder.Build();
 

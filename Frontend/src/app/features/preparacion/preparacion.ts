@@ -35,6 +35,7 @@ export class Preparacion {
   private readonly pedidos = signal<Pedido[]>([]);
   private readonly detalles = signal<Map<number, DetallePedido[]>>(new Map());
   private readonly nombres = signal<Map<number, string>>(new Map());
+  private readonly tamanos = signal<Map<number, string>>(new Map());
   private readonly mesas = signal<Map<number, number>>(new Map());
   private readonly ahora = signal(Date.now());
 
@@ -56,6 +57,8 @@ export class Preparacion {
     })));
 
   constructor() {
+    // Nombres de tamaños aparte: si fallan, el pedido igual se muestra (sin el tamaño).
+    this.catalogo.nombresTamanos$.subscribe({ next: (m) => this.tamanos.set(m), error: () => undefined });
     forkJoin({ nombres: this.catalogo.nombresProductos$, mesas: this.catalogo.numerosMesa$ })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({ next: ({ nombres, mesas }) => { this.nombres.set(nombres); this.mesas.set(mesas); } });
@@ -90,6 +93,12 @@ export class Preparacion {
 
   protected items(p: Pedido): DetallePedido[] {
     return this.detalles().get(p.pedidoId) ?? [];
+  }
+
+  /** "Helado de Vainilla (Grande)", o solo el nombre si no tiene tamaño. */
+  protected descripcion(d: DetallePedido): string {
+    const tamano = d.tamanoId ? this.tamanos().get(d.tamanoId) : undefined;
+    return tamano ? `${this.nombre(d.productoId)} (${tamano})` : this.nombre(d.productoId);
   }
 
   protected nombre(productoId: number): string {
