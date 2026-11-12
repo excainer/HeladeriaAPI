@@ -129,4 +129,20 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios)
     VALUES (N'admin', N'Administrador',
             N'AQAAAAIAAYagAAAAEPOWvPtfnmA0RfvTPpxuz77lrY+f17UtrZfnCZrxsVm7nwM2s0HkNQUIHnMs6DULeA==',
             N'Administrador', 1);
+
+-- Cuentas del equipo de desarrollo (Administradores), contraseña inicial "12345678".
+-- Se agregan también a bases existentes si todavía no están. Cambien la contraseña en "Mi cuenta".
+INSERT INTO dbo.Usuarios (NombreUsuario, Nombre, ClaveHash, Rol, Activo)
+SELECT e.NombreUsuario, e.Nombre, e.ClaveHash, N'Administrador', 1
+FROM (VALUES
+    (N'excainer',  N'Juan Gallo',
+     N'AQAAAAIAAYagAAAAEEkBEAPa84MQbqbCO6yFUYumf8UWAftVLYsT/dOG4ik1KguKAeU2k5CZaq0mWyJmZg=='),
+    (N'alejandro', N'Alejandro Ortega',
+     N'AQAAAAIAAYagAAAAEHmtJ4mY9JvtQVlloG/wyN1OtvmCen0lD7xFijQku/KW26HFhK7hcNhnlvhspwdnjg=='),
+    (N'alexander', N'Alexander V' + NCHAR(233) + N'lez',  -- "Vélez"
+     N'AQAAAAIAAYagAAAAEAw2SAqi6tvfUyn2Q0Iv0HrrF3XPvFKAT3wnaijdETBGjk6d1xHJ93v1tToP+iYNGQ=='),
+    (N'pedro',     N'Pedro Vidal',
+     N'AQAAAAIAAYagAAAAENL3W74GXlzcS97nNh/lEiL0nTkvk58wp5XNTt47HaPytgJgRooIqxsvMls55NSIqA==')
+) AS e (NombreUsuario, Nombre, ClaveHash)
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Usuarios u WHERE u.NombreUsuario = e.NombreUsuario);
 GO

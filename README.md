@@ -129,7 +129,17 @@ Los **clientes no inician sesión**: eligen su mesa, piden y siguen su pedido si
 | **Empleado** | Cocina (avanzar pedidos), historial de pedidos, resumen y mesas |
 | **Administrador** | Todo lo anterior, más editar productos, categorías y tamaños, y gestionar los usuarios |
 
-**Usuario inicial:** `admin` / `HeladApp2026` (lo crea el script si no hay usuarios). **Cámbiale la contraseña en "Mi cuenta" la primera vez que entres** y crea un usuario para cada trabajador en "Usuarios".
+**Usuarios iniciales** (los crea el script; todos son administradores):
+
+| Usuario | Nombre | Contraseña inicial |
+|---|---|---|
+|  | Administrador |  |
+|  | Juan Gallo |  |
+|  | Alejandro Ortega |  |
+|  | Alexander Vélez |  |
+|  | Pedro Vidal |  |
+
+**Estas contraseñas son públicas: cámbienlas en "Mi cuenta" la primera vez que entren** y creen un usuario para cada trabajador en "Usuarios".
 
 Seguridad:
 
@@ -201,7 +211,7 @@ npm start
 
 `npm start` redirige las llamadas a `/api` hacia `http://localhost:5152` (archivo `proxy.conf.json`), así que no hace falta configurar CORS.
 
-Para trabajar en el frontend sin base de datos hay una API falsa con los mismos datos y reglas (usuarios: `admin` / `HeladApp2026` y `cocina` / `cocina2026`):
+Para trabajar en el frontend sin base de datos hay una API falsa con los mismos datos y reglas (mismos usuarios iniciales, más un empleado de ejemplo: `cocina` / `cocina2026`):
 
 ```
 npm run mock        (en una terminal, puerto 5153)

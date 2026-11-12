@@ -23,6 +23,8 @@ const detalles = [{ detallePedidoId: 1, pedidoId: 1, productoId: 1, tamanoId: 2,
 const usuarios = [
   { usuarioId: 1, nombreUsuario: 'admin', nombre: 'Administrador', rol: 'Administrador', activo: true, clave: 'HeladApp2026' },
   { usuarioId: 2, nombreUsuario: 'cocina', nombre: 'Cocina', rol: 'Empleado', activo: true, clave: 'cocina2026' },
+  ...[['excainer', 'Juan Gallo'], ['alejandro', 'Alejandro Ortega'], ['alexander', 'Alexander Vélez'], ['pedro', 'Pedro Vidal']]
+    .map(([nombreUsuario, nombre], i) => ({ usuarioId: i + 3, nombreUsuario, nombre, rol: 'Administrador', activo: true, clave: '12345678' })),
 ];
 const sesiones = new Map(); // token de la cookie → usuarioId
 const ROLES = ['Administrador', 'Empleado'];
