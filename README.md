@@ -133,11 +133,11 @@ Los **clientes no inician sesión**: eligen su mesa, piden y siguen su pedido si
 
 | Usuario | Nombre | Contraseña inicial |
 |---|---|---|
-|  | Administrador |  |
-|  | Juan Gallo |  |
-|  | Alejandro Ortega |  |
-|  | Alexander Vélez |  |
-|  | Pedro Vidal |  |
+| `admin` | Administrador | `HeladApp2026` |
+| `excainer` | Juan Gallo | `12345678` |
+| `alejandro` | Alejandro Ortega | `12345678` |
+| `alexander` | Alexander Vélez | `12345678` |
+| `pedro` | Pedro Vidal | `12345678` |
 
 **Estas contraseñas son públicas: cámbienlas en "Mi cuenta" la primera vez que entren** y creen un usuario para cada trabajador en "Usuarios".
 
