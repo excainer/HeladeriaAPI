@@ -33,8 +33,10 @@ export const routes: Routes = [
           import('./features/carrito/carrito').then(m => m.Carrito)
       },
       {
+        // Sin guard de mesa: al tocar la notificación push se abre en una pestaña nueva
+        // (sin la mesa guardada) y debe mostrar el pedido igual. Si hay mesa elegida,
+        // el seguimiento no muestra pedidos de otra mesa.
         path: 'pedido/:id',
-        canActivate: [mesaGuard],
         loadComponent: () =>
           import('./features/seguimiento/seguimiento').then(m => m.Seguimiento)
       }

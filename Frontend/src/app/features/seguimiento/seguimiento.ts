@@ -10,6 +10,7 @@ import { CatalogoService } from '../../core/services/catalogo';
 import { MesaSesionService } from '../../core/services/mesa-sesion';
 import { PedidoService } from '../../core/services/pedido';
 import { SonidoService } from '../../core/services/sonido';
+import { NotificacionesService, SoporteAvisos } from '../../core/services/notificaciones';
 import { sondeo } from '../../core/utils/sondeo';
 import { Pesos } from '../../shared/pipes/pesos';
 
@@ -44,6 +45,7 @@ export class Seguimiento {
   private readonly destroyRef = inject(DestroyRef);
   private readonly sonido = inject(SonidoService);
   private readonly titulo = inject(Title);
+  private readonly notificaciones = inject(NotificacionesService);
 
   protected readonly pedido = signal<Pedido | null>(null);
   protected readonly detalles = signal<DetallePedido[]>([]);
@@ -61,6 +63,13 @@ export class Seguimiento {
   private readonly refrescar = new Subject<void>();
   private readonly documento = inject(DOCUMENT);
   protected readonly cancelado = computed(() => this.pedido()?.estado === 'Cancelado');
+  /** Mientras el pedido está pendiente o en preparación se ofrece el aviso push. */
+  protected readonly enEspera = computed(() => {
+    const estado = this.pedido()?.estado;
+    return estado === 'Pendiente' || estado === 'En Preparacion';
+  });
+  /** Notificaciones push en este celular (ver NotificacionesService). */
+  protected readonly avisosPush = signal<SoporteAvisos | 'activando' | 'activo' | 'error'>('no-soportado');
 
   protected readonly pasos = ESTADOS_PEDIDO.map((valor) => ({ valor, texto: etiquetaEstado(valor) }));
   protected readonly posicion = computed(() => {
@@ -81,6 +90,7 @@ export class Seguimiento {
       this.noEncontrado.set(true);
       return;
     }
+    this.avisosPush.set(this.notificaciones.activos(id) ? 'activo' : this.notificaciones.soporte());
     this.iniciar(id);
 
     // Al desbloquear el celular o volver a la pestaña se consulta de inmediato
@@ -93,6 +103,16 @@ export class Seguimiento {
       this.documento.defaultView?.removeEventListener('focus', alVolver);
       this.titulo.setTitle('HeladApp');
     });
+  }
+
+  /** El cliente pide que su celular le avise cuando el pedido esté listo, aunque cierre la app. */
+  protected async activarAvisos() {
+    const pedidoId = this.pedido()?.pedidoId;
+    if (!pedidoId || this.avisosPush() === 'activando') return;
+    this.avisosPush.set('activando');
+    const resultado = await this.notificaciones.activar(pedidoId);
+    // Si cerró el cuadro de permiso sin elegir, se le vuelve a ofrecer.
+    this.avisosPush.set(resultado === 'cancelado' ? 'disponible' : resultado);
   }
 
   protected cerrarAviso() {

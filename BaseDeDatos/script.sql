@@ -128,6 +128,21 @@ IF COL_LENGTH('dbo.DetallesPedido', 'TamanoId') IS NULL
         ADD TamanoId INT NULL CONSTRAINT FK_DetallesPedido_Tamanos REFERENCES dbo.Tamanos(TamanoId);
 GO
 
+-- Notificaciones push: el celular del cliente se suscribe al seguimiento de su pedido y recibe
+-- un aviso cuando queda listo (o si se cancela), aunque tenga la app cerrada.
+-- Las suscripciones se borran cuando el pedido ya avisó; se borran solas si se elimina el pedido.
+IF OBJECT_ID('dbo.SuscripcionesPush') IS NULL
+CREATE TABLE dbo.SuscripcionesPush (
+    SuscripcionPushId INT IDENTITY(1,1) PRIMARY KEY,
+    PedidoId INT NOT NULL CONSTRAINT FK_SuscripcionesPush_Pedidos
+        REFERENCES dbo.Pedidos(PedidoId) ON DELETE CASCADE,
+    Endpoint NVARCHAR(1000) NOT NULL,
+    P256dh NVARCHAR(200) NOT NULL,
+    Auth NVARCHAR(100) NOT NULL,
+    Fecha DATETIME NOT NULL DEFAULT GETDATE()
+);
+GO
+
 -- Datos de ejemplo (solo si las tablas estan vacias)
 IF NOT EXISTS (SELECT 1 FROM dbo.Categorias)
     INSERT INTO dbo.Categorias (Nombre)

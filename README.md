@@ -57,6 +57,7 @@ erDiagram
     Pedidos ||--|{ DetallesPedido : contiene
     Productos ||--o{ DetallesPedido : "se pide en"
     Tamanos |o--o{ DetallesPedido : "se elige en"
+    Pedidos ||--o{ SuscripcionesPush : "avisa a"
 
     Categorias {
         int CategoriaId PK
@@ -107,6 +108,14 @@ erDiagram
         string Toppings "nombres elegidos"
         string Observaciones
         decimal PrecioUnitario
+    }
+    SuscripcionesPush {
+        int SuscripcionPushId PK
+        int PedidoId FK
+        string Endpoint "servicio de push del navegador"
+        string P256dh
+        string Auth
+        datetime Fecha
     }
 ```
 
@@ -186,6 +195,8 @@ Seguridad:
 | 🔑 | POST | `/api/Pedidos/personal` | El personal registra un pedido (mesa opcional = para llevar); queda quién lo registró |
 | 🔑 | PUT | `/api/Pedidos/{id}/estado` | Avanza el estado del pedido |
 | 🔑 | POST | `/api/Pedidos/{id}/cancelar` | Cancela un pedido pendiente |
+| 🔓 | GET | `/api/Notificaciones/clave-publica` | Clave pública VAPID para suscribirse a las notificaciones push |
+| 🔓 | POST | `/api/Notificaciones/pedidos/{pedidoId}` | El celular del cliente pide aviso push cuando su pedido esté listo |
 
 ### Reglas de negocio
 
@@ -200,6 +211,7 @@ Seguridad:
 - **Pedidos del personal:** empleados y administradores pueden registrar pedidos de clientes que piden en el mostrador o al mesero, para una mesa o **para llevar**. Se aplican las mismas reglas (precios del catálogo, tamaños, transacción) y queda guardado quién lo registró (`registradoPor`); los pedidos del cliente desde la mesa quedan sin ese dato.
 - **Para llevar:** el cliente elige al confirmar "Para comer aquí" o "Para llevar" (`paraLlevar`); el pedido sigue asociado a su mesa y la cocina ve la etiqueta 🥡 para empacarlo. El personal también puede marcarlo, y los pedidos de mostrador (sin mesa) siempre son para llevar.
 - **Cancelar:** el personal puede cancelar un pedido solo mientras está `Pendiente` (`POST /api/Pedidos/{id}/cancelar`). Un pedido cancelado no cuenta en las ventas, no ocupa la mesa y no se puede reactivar. Si dos personas cancelan y empiezan a preparar a la vez, solo una acción se aplica.
+- **Notificaciones push:** en el seguimiento del pedido el cliente toca **Avisarme** y su celular recibe una notificación cuando el pedido pasa a `Listo` (o si se cancela), aunque haya cerrado la app o bloqueado la pantalla. Solo se puede pedir mientras el pedido está `Pendiente` o `En Preparacion`, hasta 5 celulares por pedido, y solo con direcciones de los servicios de push de los navegadores (Google, Mozilla, Apple, Microsoft); la API no envía nada a otros servidores. Cada pedido avisa una sola vez: después se borran sus suscripciones. Si un aviso falla, el cambio de estado se guarda igual.
 - **Textos:** `sabores` y `toppings` son nombres separados por coma (ej. `"Vainilla, Fresa"`) de hasta 200 caracteres en total y `observaciones` hasta 300.
 
 Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que no maneja tamaños):
@@ -218,7 +230,7 @@ Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que n
 
 Aplicación Angular en la carpeta `Frontend`. Tiene dos zonas:
 
-- **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), elige tamaño, sabores y toppings, arma el pedido y sigue su estado en tiempo real. Cuando el pedido queda listo, el celular suena, vibra (Android) y muestra un aviso.
+- **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), elige tamaño, sabores y toppings, arma el pedido y sigue su estado en tiempo real. Cuando el pedido queda listo, el celular suena, vibra (Android) y muestra un aviso; con **Avisarme** también le llega una **notificación push** aunque haya cerrado la app.
 - **Personal** (`http://localhost:4200/personal`, con login): **nuevo pedido** (para mostrador o mesero), cocina (avanza o cancela pedidos, y suena cuando llega uno nuevo; se puede silenciar), historial de pedidos, resumen y, para administradores, **administración** de productos, categorías, tamaños, sabores y toppings, y usuarios.
 
 Con la API corriendo (paso 3):
@@ -239,3 +251,11 @@ npm run start:mock  (en otra terminal)
 ```
 
 Pruebas unitarias: `npm test`.
+
+### Notificaciones push
+
+- **Claves:** la API firma los avisos con un par de claves VAPID. Si no están configuradas, la primera vez las genera y las guarda en `HeladeriaAPI/claves-push.json` (ignorado por git). En producción configúralas en `Notificaciones:ClavePublica`, `Notificaciones:ClavePrivada` y `Notificaciones:Asunto` (un `mailto:` o una URL de contacto), por ejemplo con variables de entorno o *user-secrets*. Si cambian, los celulares ya suscritos dejan de recibir avisos hasta que vuelvan a tocar **Avisarme**.
+- **HTTPS:** los navegadores solo permiten push en `https` o en `localhost`. Para probar desde un celular en la red local (`http://192.168...`) hace falta publicar la app con https (por ejemplo, un túnel).
+- **iPhone:** Safari solo ofrece push a las apps agregadas a la pantalla de inicio (iOS 16.4 o superior): **Compartir → Agregar a inicio**. La app lo explica en el seguimiento.
+- **Service worker:** `Frontend/public/sw.js` solo muestra los avisos; no guarda nada en caché.
+- La API falsa (`npm run mock`) acepta la suscripción pero no envía avisos.

@@ -2,6 +2,13 @@
 // de BaseDeDatos/script.sql. No forma parte de la aplicación ni se despliega. Uso: npm run mock (puerto 5153).
 // Los datos viven en memoria: se reinician cada vez que se levanta el servidor.
 import { createServer } from 'node:http';
+import { generateKeyPairSync } from 'node:crypto';
+
+// Clave pública P-256 válida (base64url, sin comprimir) para que el navegador pueda suscribirse.
+const CLAVE_PUSH_FALSA = (() => {
+  const { x, y } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' }).publicKey.export({ format: 'jwk' });
+  return Buffer.concat([Buffer.from([4]), Buffer.from(x, 'base64url'), Buffer.from(y, 'base64url')]).toString('base64url');
+})();
 
 const categorias = ['Helados', 'Bebidas', 'Postres', 'Toppings'].map((nombre, i) => ({ categoriaId: i + 1, nombre }));
 const mesas = [1, 2, 3, 4, 5].map((n) => ({ mesaId: n, numero: n, estado: 'Disponible' }));
@@ -317,6 +324,24 @@ createServer((req, res) => {
         detalles.push({ sabores: null, toppings: null, observaciones: null, ...d, detallePedidoId: siguienteId(detalles, 'detallePedidoId'), pedidoId });
       }
       return enviar(res, 201, pedido);
+    }
+
+    // Notificaciones push: la API falsa acepta la suscripción, pero NO envía avisos
+    // (para probarlos de verdad hay que usar la API real).
+    if (recurso === 'notificaciones' && a === 'clave-publica' && req.method === 'GET') {
+      return enviar(res, 200, { clavePublica: CLAVE_PUSH_FALSA });
+    }
+    if (recurso === 'notificaciones' && a === 'pedidos' && req.method === 'POST') {
+      const pedido = pedidos.find((x) => x.pedidoId === Number(b));
+      if (!pedido) return enviar(res, 404);
+      if (!['Pendiente', 'En Preparacion'].includes(pedido.estado)) {
+        return enviar(res, 409, `El pedido ya está "${pedido.estado}": no hay nada que avisar.`);
+      }
+      if (!String(datos.endpoint ?? '').startsWith('https://') || !datos.keys?.p256dh || !datos.keys?.auth) {
+        return enviar(res, 400, 'La suscripción no es válida.');
+      }
+      console.log(`[mock] Pedido ${pedido.pedidoId}: suscripción push recibida (la API falsa no envía avisos).`);
+      return enviar(res, 204);
     }
 
     if (recurso === 'pedidos' && b === 'cancelar' && req.method === 'POST') {

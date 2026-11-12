@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using HeladeriaAPI.Models;
+using HeladeriaAPI.Notificaciones;
 using HeladeriaAPI.Query.Interfaces;
 using HeladeriaAPI.Repository.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +29,7 @@ namespace HeladeriaAPI.Controllers
         private readonly ITamanoQueries _tamanoQueries;
         private readonly IOpcionQueries _opcionQueries;
         private readonly IPedidoRepository _pedidoRepository;
+        private readonly INotificadorPush _notificador;
 
         public PedidosController(
             IPedidoQueries pedidoQueries,
@@ -35,7 +37,8 @@ namespace HeladeriaAPI.Controllers
             IProductoQueries productoQueries,
             ITamanoQueries tamanoQueries,
             IOpcionQueries opcionQueries,
-            IPedidoRepository pedidoRepository)
+            IPedidoRepository pedidoRepository,
+            INotificadorPush notificador)
         {
             _pedidoQueries = pedidoQueries;
             _mesaQueries = mesaQueries;
@@ -43,6 +46,7 @@ namespace HeladeriaAPI.Controllers
             _tamanoQueries = tamanoQueries;
             _opcionQueries = opcionQueries;
             _pedidoRepository = pedidoRepository;
+            _notificador = notificador;
         }
 
         /// <summary>
@@ -307,6 +311,19 @@ namespace HeladeriaAPI.Controllers
             if (!await _pedidoRepository.CambiarEstadoAsync(id, pedido.Estado, estado))
                 return Conflict("Otra persona acaba de cambiar este pedido. Actualiza la pantalla.");
 
+            // Notificación push al celular del cliente (si la activó en el seguimiento del pedido).
+            if (estado == "Listo")
+            {
+                var mensaje = pedido.ParaLlevar || pedido.MesaId is null
+                    ? "Ya puedes recogerlo en el mostrador."
+                    : "En un momento te lo llevamos a la mesa.";
+                await _notificador.AvisarYCerrarAsync(id, $"🍨 ¡Tu pedido #{id} está listo!", mensaje);
+            }
+            else if (estado == "Entregado")
+            {
+                await _notificador.CerrarAsync(id);
+            }
+
             return NoContent();
         }
 
@@ -338,6 +355,9 @@ namespace HeladeriaAPI.Controllers
             {
                 return Conflict("Solo se pueden cancelar pedidos pendientes: la cocina ya empezó a prepararlo.");
             }
+
+            await _notificador.AvisarYCerrarAsync(id, $"Tu pedido #{id} fue cancelado",
+                "Si crees que es un error, avísale al personal.");
 
             return NoContent();
         }

@@ -120,3 +120,15 @@
 @keyframes aparecer { from { transform: scale(0.9); opacity: 0; } }
 .listo .boton { display: flex; align-items: center; justify-content: center; text-align: center; }
 .etiqueta-llevar { align-self: flex-start; padding: var(--espacio-1) var(--espacio-3); border-radius: var(--radio-pildora); background: var(--vainilla); font-weight: 700; font-size: var(--texto-pequeno); }
+.push {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espacio-3);
+  padding: var(--espacio-4);
+  border: 2px dashed var(--tinta);
+  border-radius: var(--radio-medio);
+}
+.push--activo { border-style: solid; background: var(--menta-suave); }
+.push__error { font-weight: 700; }

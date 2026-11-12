@@ -9,6 +9,7 @@ import { Seguimiento } from './seguimiento';
 import { Title } from '@angular/platform-browser';
 import { SonidoService } from '../../core/services/sonido';
 import { MesaSesionService } from '../../core/services/mesa-sesion';
+import { NotificacionesService, ResultadoActivacion } from '../../core/services/notificaciones';
 
 registerLocaleData(localeEsCo);
 
@@ -180,5 +181,56 @@ describe('Seguimiento', () => {
     http.expectOne('/api/Pedidos/12').flush({ ...pedido('Pendiente'), paraLlevar: true });
     await vi.advanceTimersByTimeAsync(0); TestBed.tick();
     expect(f.nativeElement.querySelector('.etiqueta-llevar').textContent).toContain('Para llevar');
+  });
+
+  describe('notificaciones push', () => {
+    function simularNavegador(soporte: 'disponible' | 'requiere-instalar', resultado: ResultadoActivacion = 'activo') {
+      const servicio = TestBed.inject(NotificacionesService);
+      vi.spyOn(servicio, 'soporte').mockReturnValue(soporte);
+      vi.spyOn(servicio, 'activos').mockReturnValue(false);
+      vi.spyOn(servicio, 'activar').mockResolvedValue(resultado);
+      return servicio;
+    }
+
+    it('ofrece el aviso mientras se prepara y lo activa con un toque', async () => {
+      const servicio = simularNavegador('disponible');
+      const f = await crear();
+      http.expectOne('/api/Pedidos/12').flush(pedido('Pendiente'));
+      await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+      const tarjeta: HTMLElement = f.nativeElement.querySelector('.push');
+      expect(tarjeta.textContent).toContain('¿Te avisamos cuando esté listo?');
+
+      tarjeta.querySelector('button')!.click();
+      await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+      expect(servicio.activar).toHaveBeenCalledWith(12);
+      expect(f.nativeElement.querySelector('.push').textContent).toContain('te avisaremos en el celular');
+    });
+
+    it('si falla, deja intentarlo de nuevo', async () => {
+      simularNavegador('disponible', 'error');
+      const f = await crear();
+      http.expectOne('/api/Pedidos/12').flush(pedido('En Preparacion'));
+      await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+      f.nativeElement.querySelector('.push button').click();
+      await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+      expect(f.nativeElement.querySelector('.push').textContent).toContain('No pudimos activar los avisos');
+      expect(f.nativeElement.querySelector('.push button')).not.toBeNull();
+    });
+
+    it('en iPhone explica cómo agregar la app a la pantalla de inicio', async () => {
+      simularNavegador('requiere-instalar');
+      const f = await crear();
+      http.expectOne('/api/Pedidos/12').flush(pedido('Pendiente'));
+      await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+      expect(f.nativeElement.querySelector('.push').textContent).toContain('Agregar a inicio');
+    });
+
+    it('no lo ofrece si el pedido ya está listo', async () => {
+      simularNavegador('disponible');
+      const f = await crear();
+      http.expectOne('/api/Pedidos/12').flush(pedido('Listo'));
+      await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+      expect(f.nativeElement.querySelector('.push')).toBeNull();
+    });
   });
 });

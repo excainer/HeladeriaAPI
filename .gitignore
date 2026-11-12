@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Claves VAPID de notificaciones push generadas en desarrollo (la privada no se publica)
+claves-push.json

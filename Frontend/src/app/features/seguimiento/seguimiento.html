@@ -28,6 +28,31 @@
       <p class="estado__mensaje">{{ mensaje() }}</p>
     </div>
 
+    @if (enEspera() && avisosPush() !== 'no-soportado') {
+      <div class="push" [class.push--activo]="avisosPush() === 'activo'">
+        @switch (avisosPush()) {
+          @case ('activo') {
+            <p role="status">🔔 Listo: te avisaremos en el celular cuando esté listo, aunque cierres la app.</p>
+          }
+          @case ('bloqueado') {
+            <p>🔕 Las notificaciones están bloqueadas para HeladApp. Puedes permitirlas en la configuración del navegador. Mientras tengas esta página abierta igual te avisamos con sonido.</p>
+          }
+          @case ('requiere-instalar') {
+            <p>🔔 En iPhone, para recibir el aviso aunque cierres la app: toca <strong>Compartir</strong> → <strong>Agregar a inicio</strong> y abre HeladApp desde ahí.</p>
+          }
+          @default {
+            <p>🔔 ¿Te avisamos cuando esté listo? Te llega una notificación aunque cierres la app o bloquees el celular.</p>
+            @if (avisosPush() === 'error') {
+              <p class="push__error" role="alert">No pudimos activar los avisos. Inténtalo de nuevo.</p>
+            }
+            <button type="button" class="boton" (click)="activarAvisos()" [disabled]="avisosPush() === 'activando'">
+              {{ avisosPush() === 'activando' ? 'Activando…' : 'Avisarme' }}
+            </button>
+          }
+        }
+      </div>
+    }
+
     @if (errorConexion()) {
       <p class="aviso" role="alert">No pudimos actualizar el estado. Lo intentamos de nuevo en unos segundos.</p>
     }

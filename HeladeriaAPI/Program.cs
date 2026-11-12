@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.RateLimiting;
 using HeladeriaAPI.Controllers;
 using HeladeriaAPI.Models;
+using HeladeriaAPI.Notificaciones;
 using HeladeriaAPI.Query.Implements;
 using HeladeriaAPI.Query.Interfaces;
 using HeladeriaAPI.Repository.Implements;
@@ -58,6 +59,17 @@ namespace HeladeriaAPI
             builder.Services.AddScoped<IOpcionRepository, OpcionRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IMesaRepository, MesaRepository>();
+            builder.Services.AddScoped<ISuscripcionPushRepository, SuscripcionPushRepository>();
+            builder.Services.AddScoped<ISuscripcionPushQueries, SuscripcionPushQueries>();
+
+            // Notificaciones push al cliente. Las claves VAPID salen de la configuración
+            // o se generan una sola vez y quedan en claves-push.json (ver ClavesPush).
+            builder.Services.AddSingleton(sp => ClavesPush.Cargar(
+                builder.Configuration, builder.Environment,
+                sp.GetRequiredService<ILoggerFactory>().CreateLogger<ClavesPush>()));
+            builder.Services.AddHttpClient<INotificadorPush, NotificadorPush>(http =>
+                // Si un servicio de push no responde, no se demora el cambio de estado del pedido.
+                http.Timeout = TimeSpan.FromSeconds(5));
 
             // Sesión del personal: cookie HttpOnly. Los clientes no inician sesión.
             builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();

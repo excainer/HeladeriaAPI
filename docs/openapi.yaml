@@ -325,6 +325,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  /api/Notificaciones/clave-publica:
+    get:
+      tags:
+        - Notificaciones
+      summary: Clave pública VAPID que el navegador necesita para suscribirse (`applicationServerKey`).
+      responses:
+        '200':
+          description: Devuelve la clave pública en base64url.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClavePublicaResponse'
+  '/api/Notificaciones/pedidos/{pedidoId}':
+    post:
+      tags:
+        - Notificaciones
+      summary: "Suscribe un celular para recibir un aviso cuando el pedido quede listo (o si se cancela).\r\nEl cuerpo es el resultado de `PushSubscription.toJSON()` del navegador.\r\nSi el mismo celular se suscribe de nuevo, se actualiza (no se duplica)."
+      parameters:
+        - name: pedidoId
+          in: path
+          description: Pedido del que se quiere recibir aviso.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Suscripción del navegador.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuscripcionRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/SuscripcionRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/SuscripcionRequest'
+      responses:
+        '204':
+          description: 'Listo: el celular recibirá el aviso.'
+        '400':
+          description: La suscripción no es válida o no es de un servicio de push conocido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe el pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: 'El pedido ya está listo, entregado o cancelado, o ya tiene el máximo de celulares suscritos.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /api/Opciones:
     get:
       tags:
@@ -1187,6 +1245,33 @@ components:
           description: Nombre de la categoría (ej. "Postres"). Máximo 100 caracteres.
       additionalProperties: false
       description: Datos para crear o editar una categoría.
+    ClavePublicaResponse:
+      type: object
+      properties:
+        clavePublica:
+          type: string
+          description: Clave pública VAPID en base64url.
+          nullable: true
+      additionalProperties: false
+      description: Clave pública para suscribirse a las notificaciones push.
+    ClavesSuscripcion:
+      required:
+        - auth
+        - p256dh
+      type: object
+      properties:
+        p256dh:
+          maxLength: 200
+          minLength: 1
+          type: string
+          description: Clave pública del navegador (65 bytes).
+        auth:
+          maxLength: 100
+          minLength: 1
+          type: string
+          description: Secreto de autenticación (16 bytes).
+      additionalProperties: false
+      description: Claves de cifrado de una suscripción push (base64url).
     CrearPedidoRequest:
       required:
         - detalles
@@ -1563,6 +1648,21 @@ components:
           description: Ítems del pedido (mínimo uno).
       additionalProperties: false
       description: Datos para que el personal registre un pedido.
+    SuscripcionRequest:
+      required:
+        - endpoint
+        - keys
+      type: object
+      properties:
+        endpoint:
+          maxLength: 1000
+          minLength: 1
+          type: string
+          description: Dirección del servicio de push del navegador.
+        keys:
+          $ref: '#/components/schemas/ClavesSuscripcion'
+      additionalProperties: false
+      description: Suscripción push del navegador (mismo formato que `PushSubscription.toJSON()`).
     Tamano:
       type: object
       properties:
@@ -1646,6 +1746,7 @@ tags:
   - name: Auth
   - name: Categorias
   - name: Mesas
+  - name: Notificaciones
   - name: Opciones
   - name: Pedidos
   - name: Productos
