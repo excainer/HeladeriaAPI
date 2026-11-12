@@ -8,10 +8,15 @@
   } @else if (pedido(); as p) {
     <h1>Tu pedido #{{ p.pedidoId }}</h1>
 
-    @if (avisoListo()) {
+    @if (aviso(); as tipo) {
       <div class="listo" role="alert">
-        <p class="listo__titulo">🍨 ¡Tu pedido está listo!</p>
-        <p>Ya puedes recogerlo o en un momento te lo llevamos a la mesa.</p>
+        @if (tipo === 'listo') {
+          <p class="listo__titulo">🍨 ¡Tu pedido está listo!</p>
+          <p>Ya puedes recogerlo o en un momento te lo llevamos a la mesa.</p>
+        } @else {
+          <p class="listo__titulo">🍨 ¡Tu pedido fue entregado!</p>
+          <p>¡Que lo disfrutes!</p>
+        }
         <button type="button" class="boton" (click)="cerrarAviso()">¡Entendido!</button>
       </div>
     }

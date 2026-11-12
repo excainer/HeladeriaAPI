@@ -53,7 +53,7 @@ describe('Seguimiento', () => {
     expect(t).toContain('$7.000');
   });
 
-  it('se actualiza cada 5 segundos y avisa cuando está listo', async () => {
+  it('se actualiza sola y avisa cuando está listo', async () => {
     const f = await crear();
     http.expectOne('/api/Pedidos/12').flush(pedido('En Preparacion'));
     await vi.advanceTimersByTimeAsync(0); TestBed.tick();
@@ -128,5 +128,50 @@ describe('Seguimiento', () => {
     expect(f.nativeElement.querySelector('.pasos')).toBeNull();
     await vi.advanceTimersByTimeAsync(10000);
     http.expectNone('/api/Pedidos/12');
+  });
+
+  it('al volver a la página (celular desbloqueado) consulta de inmediato', async () => {
+    await crear();
+    http.expectOne('/api/Pedidos/12').flush(pedido('En Preparacion'));
+    await vi.advanceTimersByTimeAsync(1000);
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(0);
+    http.expectOne('/api/Pedidos/12').flush(pedido('Listo')); // sin esperar los 3 segundos
+  });
+
+  it('si el celular estuvo dormido y el pedido ya se entregó, avisa igual', async () => {
+    const musica = vi.spyOn(TestBed.inject(SonidoService), 'pedidoListo');
+    const f = await crear();
+    http.expectOne('/api/Pedidos/12').flush(pedido('Pendiente'));
+    await vi.advanceTimersByTimeAsync(3000);
+    http.expectOne('/api/Pedidos/12').flush(pedido('Entregado')); // nunca vio el "Listo"
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(musica).toHaveBeenCalledTimes(1);
+    expect(f.nativeElement.querySelector('.listo').textContent).toContain('¡Tu pedido fue entregado!');
+  });
+
+  it('el aviso de listo se cierra solo cuando luego se entrega', async () => {
+    const f = await crear();
+    http.expectOne('/api/Pedidos/12').flush(pedido('En Preparacion'));
+    await vi.advanceTimersByTimeAsync(3000);
+    http.expectOne('/api/Pedidos/12').flush(pedido('Listo'));
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(f.nativeElement.querySelector('.listo')).toBeTruthy();
+    await vi.advanceTimersByTimeAsync(3000);
+    http.expectOne('/api/Pedidos/12').flush(pedido('Entregado'));
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(f.nativeElement.querySelector('.listo')).toBeNull();
+    expect(f.nativeElement.textContent).toContain('Tu pedido fue entregado');
+  });
+
+  it('si la página se recargó (celular dormido), recuerda el estado anterior y avisa', async () => {
+    sessionStorage.setItem('heladapp.pedido.12.visto', 'En Preparacion'); // lo último que vio antes de recargarse
+    const musica = vi.spyOn(TestBed.inject(SonidoService), 'pedidoListo');
+    const f = await crear();
+    http.expectOne('/api/Pedidos/12').flush(pedido('Listo'));
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(musica).toHaveBeenCalledTimes(1);
+    expect(f.nativeElement.querySelector('.listo').textContent).toContain('¡Tu pedido está listo!');
+    expect(sessionStorage.getItem('heladapp.pedido.12.visto')).toBe('Listo');
   });
 });
