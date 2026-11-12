@@ -18,7 +18,7 @@ Proyecto final del curso **Construcción de Software**, orientado por el profeso
 
 El logo es una [ilustración de Cansu Sarp en Unsplash](https://unsplash.com/photos/rj4qZOnLpnw) (licencia de Unsplash, uso libre).
 
-El repositorio original del equipo es [avelezfi/HeladeriaAPI](https://github.com/avelezfi/HeladeriaAPI). Esta copia continúa el proyecto con mejoras posteriores a la entrega (tamaños, administración del catálogo, login del personal y más pruebas); el historial de commits conserva el trabajo de cada integrante.
+El repositorio original del equipo es [avelezfi/HeladeriaAPI](https://github.com/avelezfi/HeladeriaAPI). Esta copia continúa el proyecto con mejoras posteriores a la entrega (tamaños, sabores y toppings en la base de datos, administración del catálogo, login del personal y más pruebas); el historial de commits conserva el trabajo de cada integrante.
 
 ## Estructura
 
@@ -38,7 +38,7 @@ El repositorio original del equipo es [avelezfi/HeladeriaAPI](https://github.com
 
 ## 1. Crear la base de datos
 
-Ejecuta `BaseDeDatos/script.sql` en SQL Server Management Studio (o `sqlcmd`). Crea la base `HeladeriaAPI_DB`, sus tablas y datos de ejemplo (4 categorías, 8 productos, 5 tamaños y 5 mesas). Se puede ejecutar más de una vez sin duplicar datos, y **también actualiza una base creada con una versión anterior** (agrega la tabla de tamaños sin borrar los pedidos existentes).
+Ejecuta `BaseDeDatos/script.sql` en SQL Server Management Studio (o `sqlcmd`). Crea la base `HeladeriaAPI_DB`, sus tablas y datos de ejemplo (4 categorías, 8 productos, 5 tamaños, 3 sabores y 2 toppings, y 5 mesas). Se puede ejecutar más de una vez sin duplicar datos, y **también actualiza una base creada con una versión anterior** (agrega las tablas de tamaños y de sabores y toppings sin borrar los pedidos existentes).
 
 Con `sqlcmd`, por ejemplo usando LocalDB (viene con Visual Studio):
 
@@ -52,6 +52,7 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -E -i BaseDeDatos\script.sql
 erDiagram
     Categorias ||--o{ Productos : agrupa
     Categorias ||--o{ Tamanos : "ofrece"
+    Categorias ||--o{ Opciones : "ofrece sabores y toppings"
     Mesas ||--o{ Pedidos : recibe
     Pedidos ||--|{ DetallesPedido : contiene
     Productos ||--o{ DetallesPedido : "se pide en"
@@ -76,6 +77,14 @@ erDiagram
         int Orden
         bool Activo
     }
+    Opciones {
+        int OpcionId PK
+        int CategoriaId FK
+        string Tipo "Sabor o Topping"
+        string Nombre
+        int Orden
+        bool Activo
+    }
     Mesas {
         int MesaId PK
         int Numero
@@ -94,8 +103,8 @@ erDiagram
         int ProductoId FK
         int TamanoId FK "opcional"
         int Cantidad
-        string Sabores
-        string Toppings
+        string Sabores "nombres elegidos"
+        string Toppings "nombres elegidos"
         string Observaciones
         decimal PrecioUnitario
     }
@@ -127,7 +136,7 @@ Los **clientes no inician sesión**: eligen su mesa, piden y siguen su pedido si
 | Rol | Puede |
 |---|---|
 | **Empleado** | Cocina (avanzar pedidos), historial de pedidos, resumen y mesas |
-| **Administrador** | Todo lo anterior, más editar productos, categorías y tamaños, y gestionar los usuarios |
+| **Administrador** | Todo lo anterior, más editar productos, categorías, tamaños, sabores y toppings, y gestionar los usuarios |
 
 **Usuarios iniciales** (los crea el script):
 
@@ -162,10 +171,12 @@ Seguridad:
 | 🔓 | GET | `/api/Categorias`, `/api/Categorias/{id}` | Consulta de categorías |
 | 🛡️ | POST · PUT | `/api/Categorias`, `/api/Categorias/{id}` | Crear y renombrar categorías |
 | 🔓 | GET | `/api/Productos?categoriaId=`, `/api/Productos/categoria/{categoriaId}` | Lista de productos (filtro opcional por categoría) |
-| 🔓 | GET | `/api/Productos/{id}` | Detalle de un producto **con sus tamaños** |
+| 🔓 | GET | `/api/Productos/{id}` | Detalle de un producto **con sus tamaños, sabores y toppings** |
 | 🛡️ | POST · PUT | `/api/Productos`, `/api/Productos/{id}` | Crear y editar productos (precio, categoría, disponibilidad) |
 | 🔓 | GET | `/api/Tamanos?categoriaId=`, `/api/Tamanos/{id}` | Consulta de tamaños |
 | 🛡️ | POST · PUT | `/api/Tamanos`, `/api/Tamanos/{id}` | Crear y editar tamaños |
+| 🔓 | GET | `/api/Opciones?categoriaId=&tipo=`, `/api/Opciones/{id}` | Consulta de sabores y toppings (`tipo`: `Sabor` o `Topping`) |
+| 🛡️ | POST · PUT | `/api/Opciones`, `/api/Opciones/{id}` | Crear y editar sabores y toppings |
 | 🔓 | GET | `/api/Mesas`, `/api/Mesas/{id}` | Consulta de mesas |
 | 🔓 | GET | `/api/Mesas/numero/{numero}` | Mesa por su número visible (el del código QR) |
 | 🔑 | POST | `/api/Mesas/{id}/liberar` | Liberar una mesa cuando el cliente se va |
@@ -180,7 +191,8 @@ Seguridad:
 
 - **Precio:** el cliente no envía precios. La API calcula cada ítem como *precio del producto + adicional del tamaño* con los valores de la base de datos, así nadie puede alterar lo que paga.
 - **Tamaños:** se definen por categoría (por ejemplo, Helados: Pequeño, Mediano, Grande). Si la categoría de un producto tiene tamaños activos, hay que elegir uno; si no tiene, el producto se pide con su precio base.
-- **Catálogo:** no se repiten nombres (categorías en general; productos y tamaños dentro de su categoría). Productos y tamaños no se borran: se desactivan, para conservar el histórico de pedidos.
+- **Sabores y toppings:** también se definen por categoría (tabla `Opciones`, con `Tipo` = `Sabor` o `Topping`) y no cambian el precio. Son opcionales; la API solo acepta los que están activos en la categoría del producto (por ejemplo, un brownie no lleva toppings) y responde `400` con las opciones válidas si no. El pedido guarda los nombres elegidos, así un pedido antiguo conserva lo que se pidió aunque luego se edite o desactive la opción. Por eso los nombres no pueden llevar comas.
+- **Catálogo:** no se repiten nombres (categorías en general; productos, tamaños, sabores y toppings dentro de su categoría). Productos, tamaños, sabores y toppings no se borran: se desactivan, para conservar el histórico de pedidos.
 - **Productos:** si un producto no existe la API responde `404`; si está inactivo, `400`.
 - **Mesas:** una mesa queda *Ocupada* desde su primer pedido y sigue así hasta que el personal presiona **Liberar mesa** (`POST /api/Mesas/{id}/liberar`, empleados y administradores). No se puede liberar con pedidos sin entregar (`409`). La respuesta incluye `pedidosActivos` y `puedeLiberarse`.
 - **Transacción:** el pedido y todos sus detalles se guardan juntos; si algo falla no queda nada a medias.
@@ -188,7 +200,7 @@ Seguridad:
 - **Pedidos del personal:** empleados y administradores pueden registrar pedidos de clientes que piden en el mostrador o al mesero, para una mesa o **para llevar**. Se aplican las mismas reglas (precios del catálogo, tamaños, transacción) y queda guardado quién lo registró (`registradoPor`); los pedidos del cliente desde la mesa quedan sin ese dato.
 - **Para llevar:** el cliente elige al confirmar "Para comer aquí" o "Para llevar" (`paraLlevar`); el pedido sigue asociado a su mesa y la cocina ve la etiqueta 🥡 para empacarlo. El personal también puede marcarlo, y los pedidos de mostrador (sin mesa) siempre son para llevar.
 - **Cancelar:** el personal puede cancelar un pedido solo mientras está `Pendiente` (`POST /api/Pedidos/{id}/cancelar`). Un pedido cancelado no cuenta en las ventas, no ocupa la mesa y no se puede reactivar. Si dos personas cancelan y empiezan a preparar a la vez, solo una acción se aplica.
-- **Textos:** `sabores` y `toppings` admiten hasta 200 caracteres y `observaciones` hasta 300.
+- **Textos:** `sabores` y `toppings` son nombres separados por coma (ej. `"Vainilla, Fresa"`) de hasta 200 caracteres en total y `observaciones` hasta 300.
 
 Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que no maneja tamaños):
 
@@ -207,7 +219,7 @@ Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que n
 Aplicación Angular en la carpeta `Frontend`. Tiene dos zonas:
 
 - **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), elige tamaño, sabores y toppings, arma el pedido y sigue su estado en tiempo real. Cuando el pedido queda listo, el celular suena, vibra (Android) y muestra un aviso.
-- **Personal** (`http://localhost:4200/personal`, con login): **nuevo pedido** (para mostrador o mesero), cocina (avanza o cancela pedidos, y suena cuando llega uno nuevo; se puede silenciar), historial de pedidos, resumen y, para administradores, **administración** de productos, categorías, tamaños y usuarios.
+- **Personal** (`http://localhost:4200/personal`, con login): **nuevo pedido** (para mostrador o mesero), cocina (avanza o cancela pedidos, y suena cuando llega uno nuevo; se puede silenciar), historial de pedidos, resumen y, para administradores, **administración** de productos, categorías, tamaños, sabores y toppings, y usuarios.
 
 Con la API corriendo (paso 3):
 

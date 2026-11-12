@@ -14,6 +14,32 @@ const tamanos = [
   [1, 'Pequeño', 0, 1], [1, 'Mediano', 2000, 2], [1, 'Grande', 4000, 3],
   [2, 'Mediano', 0, 1], [2, 'Grande', 2500, 2],
 ].map(([categoriaId, nombre, precioAdicional, orden], i) => ({ tamanoId: i + 1, categoriaId, nombre, precioAdicional, orden, activo: true }));
+const opciones = [
+  [1, 'Sabor', 'Vainilla', 1], [1, 'Sabor', 'Chocolate', 2], [1, 'Sabor', 'Fresa', 3],
+  [1, 'Topping', 'Chispas de chocolate', 1], [1, 'Topping', 'Maní', 2],
+].map(([categoriaId, tipo, nombre, orden], i) => ({ opcionId: i + 1, categoriaId, tipo, nombre, orden, activo: true }));
+const TIPOS = ['Sabor', 'Topping'];
+const tipoValido = (t) => TIPOS.find((x) => x.toLowerCase() === String(t ?? '').trim().toLowerCase());
+
+/** Igual que la API real: revisa los sabores o toppings (separados por coma) y devuelve [texto, error]. */
+function validarOpciones(elegidas, prod, tipo) {
+  const nombres = String(elegidas ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+  if (!nombres.length) return [null, null];
+  const disponibles = opciones.filter((o) => o.categoriaId === prod.categoriaId && o.tipo === tipo && o.activo)
+    .sort((x, y) => x.orden - y.orden);
+  const plural = tipo === 'Sabor' ? 'sabores' : 'toppings';
+  if (!disponibles.length) return [null, `"${prod.nombre}" no lleva ${plural}.`];
+  const elegidasOk = new Set();
+  for (const n of nombres) {
+    const o = disponibles.find((x) => mismoNombre(x.nombre, n));
+    if (!o) {
+      const singular = tipo === 'Sabor' ? 'un sabor' : 'un topping';
+      return [null, `"${n}" no es ${singular} disponible para "${prod.nombre}". Opciones: ${disponibles.map((x) => x.nombre).join(', ')}.`];
+    }
+    elegidasOk.add(o);
+  }
+  return [disponibles.filter((o) => elegidasOk.has(o)).map((o) => o.nombre).join(', '), null];
+}
 
 const ESTADOS = ['Pendiente', 'En Preparacion', 'Listo', 'Entregado'];
 const pedidos = [{ pedidoId: 1, mesaId: 1, fecha: new Date().toISOString(), estado: 'Pendiente', total: 7000 }];
@@ -152,7 +178,7 @@ createServer((req, res) => {
     // Igual que la API real: el personal necesita sesión y el catálogo solo lo edita un administrador.
     const listaDePedidos = recurso === 'pedidos' && req.method === 'GET' && (!a || a === 'estado' || a === 'mesa');
     const cambioDeEstado = recurso === 'pedidos' && (req.method === 'PUT' || (req.method === 'POST' && b === 'cancelar'));
-    const edicionCatalogo = ['categorias', 'productos', 'tamanos'].includes(recurso) && ['POST', 'PUT'].includes(req.method);
+    const edicionCatalogo = ['categorias', 'productos', 'tamanos', 'opciones'].includes(recurso) && ['POST', 'PUT'].includes(req.method);
     if ((listaDePedidos || cambioDeEstado || edicionCatalogo) && !yo) return sinSesion();
     if (edicionCatalogo && !esAdmin) return sinPermiso();
 
@@ -184,7 +210,13 @@ createServer((req, res) => {
         if (a) {
           const prod = productos.find((x) => x.productoId === Number(a));
           if (!prod) return enviar(res, 404);
-          return enviar(res, 200, { ...prod, tamanos: tamanos.filter((t) => t.categoriaId === prod.categoriaId && t.activo) });
+          const deLaCategoria = (tipo) => opciones.filter((o) => o.categoriaId === prod.categoriaId && o.tipo === tipo && o.activo);
+          return enviar(res, 200, {
+            ...prod,
+            tamanos: tamanos.filter((t) => t.categoriaId === prod.categoriaId && t.activo),
+            sabores: deLaCategoria('Sabor'),
+            toppings: deLaCategoria('Topping'),
+          });
         }
         return enviar(res, 200, filtroCategoria === null ? productos : productos.filter((x) => x.categoriaId === filtroCategoria));
       }
@@ -192,6 +224,15 @@ createServer((req, res) => {
         if (a) return lectura(tamanos, a, 'tamanoId');
         const lista = filtroCategoria === null ? tamanos : tamanos.filter((t) => t.categoriaId === filtroCategoria);
         return enviar(res, 200, [...lista].sort((x, y) => x.categoriaId - y.categoriaId || x.orden - y.orden));
+      }
+      if (recurso === 'opciones') {
+        if (a) return lectura(opciones, a, 'opcionId');
+        const filtroTipo = url.searchParams.get('tipo');
+        if (filtroTipo !== null && !tipoValido(filtroTipo)) return enviar(res, 400, `Tipo no válido. Valores permitidos: ${TIPOS.join(', ')}.`);
+        const lista = opciones.filter((o) =>
+          (filtroCategoria === null || o.categoriaId === filtroCategoria) && (filtroTipo === null || o.tipo === tipoValido(filtroTipo)));
+        return enviar(res, 200, [...lista].sort((x, y) =>
+          x.categoriaId - y.categoriaId || TIPOS.indexOf(x.tipo) - TIPOS.indexOf(y.tipo) || x.orden - y.orden));
       }
       if (recurso === 'pedidos') {
         if (!a) return enviar(res, 200, [...pedidos].reverse());
@@ -224,6 +265,15 @@ createServer((req, res) => {
           campos: (d) => ({ categoriaId: d.categoriaId, precioAdicional: d.precioAdicional, orden: d.orden ?? 0, activo: d.activo ?? true }),
           mismoGrupo: (x, d) => x.categoriaId === d.categoriaId,
         });
+      } else if (recurso === 'opciones') {
+        const tipo = tipoValido(datos.tipo);
+        if (!tipo) return enviar(res, 400, `Tipo no válido. Valores permitidos: ${TIPOS.join(', ')}.`);
+        if (String(datos.nombre ?? '').includes(',')) return enviar(res, 400, 'El nombre no puede estar vacío ni llevar comas.');
+        r = guardarCatalogo(opciones, 'opcionId', id, { ...datos, tipo }, {
+          nombreMax: 50, etiqueta: tipo === 'Sabor' ? 'un sabor' : 'un topping',
+          campos: (d) => ({ categoriaId: d.categoriaId, tipo: d.tipo, orden: d.orden ?? 0, activo: d.activo ?? true }),
+          mismoGrupo: (x, d) => x.categoriaId === d.categoriaId && x.tipo === d.tipo,
+        });
       }
       if (r && recurso !== 'pedidos') return enviar(res, ...r);
     }
@@ -243,13 +293,17 @@ createServer((req, res) => {
         const prod = productos.find((x) => x.productoId === d.productoId);
         if (!prod) return enviar(res, 404, `No existe el producto ${d.productoId}.`);
         if (!prod.activo) return enviar(res, 400, `El producto "${prod.nombre}" no está disponible.`);
-        const opciones = tamanos.filter((t) => t.categoriaId === prod.categoriaId && t.activo);
-        const tamano = d.tamanoId == null ? null : opciones.find((t) => t.tamanoId === d.tamanoId);
+        const tamanosDelProducto = tamanos.filter((t) => t.categoriaId === prod.categoriaId && t.activo);
+        const tamano = d.tamanoId == null ? null : tamanosDelProducto.find((t) => t.tamanoId === d.tamanoId);
         if (d.tamanoId != null && !tamano) return enviar(res, 400, `El tamaño ${d.tamanoId} no está disponible para "${prod.nombre}".`);
-        if (d.tamanoId == null && opciones.length) {
-          return enviar(res, 400, `Elige un tamaño para "${prod.nombre}": ${opciones.map((t) => `${t.nombre} (${t.tamanoId})`).join(', ')}.`);
+        if (d.tamanoId == null && tamanosDelProducto.length) {
+          return enviar(res, 400, `Elige un tamaño para "${prod.nombre}": ${tamanosDelProducto.map((t) => `${t.nombre} (${t.tamanoId})`).join(', ')}.`);
         }
-        items.push({ ...d, tamanoId: tamano?.tamanoId ?? null, precioUnitario: prod.precio + (tamano?.precioAdicional ?? 0) });
+        const [sabores, errorSabores] = validarOpciones(d.sabores, prod, 'Sabor');
+        if (errorSabores) return enviar(res, 400, errorSabores);
+        const [toppings, errorToppings] = validarOpciones(d.toppings, prod, 'Topping');
+        if (errorToppings) return enviar(res, 400, errorToppings);
+        items.push({ ...d, sabores, toppings, tamanoId: tamano?.tamanoId ?? null, precioUnitario: prod.precio + (tamano?.precioAdicional ?? 0) });
       }
       const pedidoId = siguienteId(pedidos, 'pedidoId');
       const total = items.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0);

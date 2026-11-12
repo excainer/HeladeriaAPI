@@ -27,7 +27,7 @@ describe('Personal', () => {
 
   it('muestra al administrador todas las secciones', async () => {
     const f = await crear('Administrador');
-    expect(enlaces(f.nativeElement)).toEqual(['Cocina', 'Nuevo pedido', 'Pedidos', 'Resumen', 'Productos', 'Categorías', 'Tamaños', 'Mesas', 'Usuarios']);
+    expect(enlaces(f.nativeElement)).toEqual(['Cocina', 'Nuevo pedido', 'Pedidos', 'Resumen', 'Productos', 'Categorías', 'Tamaños', 'Sabores y toppings', 'Mesas', 'Usuarios']);
   });
 
   it('al empleado le oculta la administración del catálogo y de usuarios', async () => {

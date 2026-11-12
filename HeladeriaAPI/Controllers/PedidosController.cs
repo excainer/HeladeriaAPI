@@ -26,6 +26,7 @@ namespace HeladeriaAPI.Controllers
         private readonly IMesaQueries _mesaQueries;
         private readonly IProductoQueries _productoQueries;
         private readonly ITamanoQueries _tamanoQueries;
+        private readonly IOpcionQueries _opcionQueries;
         private readonly IPedidoRepository _pedidoRepository;
 
         public PedidosController(
@@ -33,12 +34,14 @@ namespace HeladeriaAPI.Controllers
             IMesaQueries mesaQueries,
             IProductoQueries productoQueries,
             ITamanoQueries tamanoQueries,
+            IOpcionQueries opcionQueries,
             IPedidoRepository pedidoRepository)
         {
             _pedidoQueries = pedidoQueries;
             _mesaQueries = mesaQueries;
             _productoQueries = productoQueries;
             _tamanoQueries = tamanoQueries;
+            _opcionQueries = opcionQueries;
             _pedidoRepository = pedidoRepository;
         }
 
@@ -114,7 +117,7 @@ namespace HeladeriaAPI.Controllers
         /// </summary>
         /// <param name="solicitud">Mesa y lista de ítems del pedido.</param>
         /// <response code="201">Pedido creado.</response>
-        /// <response code="400">Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.</response>
+        /// <response code="400">Los datos no son válidos, algún producto no está disponible, falta elegir un tamaño válido o algún sabor o topping no está disponible.</response>
         /// <response code="404">No existe la mesa o alguno de los productos indicados.</response>
         [HttpPost]
         [ProducesResponseType(typeof(Pedido), StatusCodes.Status201Created)]
@@ -129,7 +132,7 @@ namespace HeladeriaAPI.Controllers
         /// </summary>
         /// <param name="solicitud">Mesa (opcional) y lista de ítems del pedido.</param>
         /// <response code="201">Pedido registrado.</response>
-        /// <response code="400">Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.</response>
+        /// <response code="400">Los datos no son válidos, algún producto no está disponible, falta elegir un tamaño válido o algún sabor o topping no está disponible.</response>
         /// <response code="401">No hay sesión del personal.</response>
         /// <response code="404">No existe la mesa o alguno de los productos indicados.</response>
         [Authorize]
@@ -159,6 +162,12 @@ namespace HeladeriaAPI.Controllers
                     productos.Values.Select(p => p.CategoriaId)))
                 .ToList();
 
+            // Sabores y toppings activos de esas mismas categorías.
+            var saboresYToppings = (await _opcionQueries.ObtenerPorCategoriasAsync(
+                    productos.Values.Select(p => p.CategoriaId)))
+                .Where(o => o.Activo)
+                .ToList();
+
             var detalles = new List<DetallePedido>();
             foreach (var item in items)
             {
@@ -185,6 +194,12 @@ namespace HeladeriaAPI.Controllers
                     return BadRequest($"Elige un tamaño para \"{producto.Nombre}\": {opciones}.");
                 }
 
+                var opcionesDelProducto = saboresYToppings.Where(o => o.CategoriaId == producto.CategoriaId).ToList();
+                var (sabores, errorSabores) = ValidarOpciones(item.Sabores, opcionesDelProducto, Opcion.TipoSabor, producto);
+                if (errorSabores is not null) return BadRequest(errorSabores);
+                var (toppings, errorToppings) = ValidarOpciones(item.Toppings, opcionesDelProducto, Opcion.TipoTopping, producto);
+                if (errorToppings is not null) return BadRequest(errorToppings);
+
                 detalles.Add(new DetallePedido
                 {
                     ProductoId = producto.ProductoId,
@@ -192,8 +207,8 @@ namespace HeladeriaAPI.Controllers
                     Cantidad = item.Cantidad,
                     // Precio del catálogo: base del producto + adicional del tamaño elegido.
                     PrecioUnitario = producto.Precio + (tamano?.PrecioAdicional ?? 0),
-                    Sabores = item.Sabores,
-                    Toppings = item.Toppings,
+                    Sabores = sabores,
+                    Toppings = toppings,
                     Observaciones = item.Observaciones
                 });
             }
@@ -205,6 +220,43 @@ namespace HeladeriaAPI.Controllers
 
             var creado = await _pedidoQueries.ObtenerPorIdAsync(pedidoId);
             return CreatedAtAction(nameof(ObtenerPorId), new { id = pedidoId }, creado);
+        }
+
+        /// <summary>
+        /// Revisa los sabores o toppings elegidos (separados por coma) contra los disponibles
+        /// para la categoría del producto. Devuelve el texto a guardar, con los nombres tal como
+        /// están en el catálogo y en su orden, o un mensaje de error.
+        /// </summary>
+        private static (string? Texto, string? Error) ValidarOpciones(
+            string? elegidas, List<Opcion> opcionesDelProducto, string tipo, Producto producto)
+        {
+            var nombres = (elegidas ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (nombres.Length == 0) return (null, null);
+
+            var disponibles = opcionesDelProducto.Where(o => o.Tipo == tipo).ToList();
+            var plural = tipo == Opcion.TipoSabor ? "sabores" : "toppings";
+            if (disponibles.Count == 0)
+                return (null, $"\"{producto.Nombre}\" no lleva {plural}.");
+
+            var elegidasDelCatalogo = new List<Opcion>();
+            foreach (var nombre in nombres)
+            {
+                var opcion = disponibles.FirstOrDefault(o =>
+                    string.Equals(o.Nombre.Trim(), nombre, StringComparison.OrdinalIgnoreCase));
+                if (opcion is null)
+                {
+                    var lista = string.Join(", ", disponibles.Select(o => o.Nombre));
+                    var singular = tipo == Opcion.TipoSabor ? "un sabor" : "un topping";
+                    return (null, $"\"{nombre}\" no es {singular} disponible para \"{producto.Nombre}\". Opciones: {lista}.");
+                }
+                if (!elegidasDelCatalogo.Contains(opcion)) elegidasDelCatalogo.Add(opcion);
+            }
+
+            var texto = string.Join(", ", elegidasDelCatalogo
+                .OrderBy(o => disponibles.IndexOf(o))
+                .Select(o => o.Nombre.Trim()));
+            return (texto, null);
         }
 
         /// <summary>
@@ -345,11 +397,17 @@ namespace HeladeriaAPI.Controllers
         [Range(1, 1000)]
         public int Cantidad { get; set; }
 
-        /// <summary>Sabores elegidos (ej. "Vainilla, Chocolate"). Máximo 200 caracteres.</summary>
+        /// <summary>
+        /// Sabores elegidos, separados por coma (ej. "Vainilla, Chocolate"). Máximo 200 caracteres.
+        /// Deben ser sabores activos de la categoría del producto (ver <c>GET /api/Opciones</c>).
+        /// </summary>
         [MaxLength(200)]
         public string? Sabores { get; set; }
 
-        /// <summary>Toppings o adicionales (ej. "Chispas, Maní"). Máximo 200 caracteres.</summary>
+        /// <summary>
+        /// Toppings elegidos, separados por coma (ej. "Chispas de chocolate, Maní"). Máximo 200 caracteres.
+        /// Deben ser toppings activos de la categoría del producto (ver <c>GET /api/Opciones</c>).
+        /// </summary>
         [MaxLength(200)]
         public string? Toppings { get; set; }
 

@@ -27,6 +27,12 @@ const tamanos = [
   { tamanoId: 1, categoriaId: 1, nombre: 'Pequeño', precioAdicional: 0, orden: 1, activo: true },
   { tamanoId: 3, categoriaId: 1, nombre: 'Gigante', precioAdicional: 9000, orden: 3, activo: false },
 ];
+const opciones = [
+  { opcionId: 3, categoriaId: 1, tipo: 'Sabor', nombre: 'Fresa', orden: 2, activo: true },
+  { opcionId: 1, categoriaId: 1, tipo: 'Sabor', nombre: 'Vainilla', orden: 1, activo: true },
+  { opcionId: 4, categoriaId: 1, tipo: 'Sabor', nombre: 'Mango', orden: 3, activo: false },
+  { opcionId: 5, categoriaId: 1, tipo: 'Topping', nombre: 'Maní', orden: 1, activo: true },
+];
 
 describe('Menu', () => {
   let http: HttpTestingController;
@@ -44,6 +50,7 @@ describe('Menu', () => {
     http.expectOne('/api/Categorias').flush(categorias);
     http.expectOne('/api/Productos').flush(productos);
     http.expectOne('/api/Tamanos').flush(tamanos);
+    http.expectOne('/api/Opciones').flush(opciones);
     await f.whenStable();
     return f;
   }
@@ -105,6 +112,21 @@ describe('Menu', () => {
     expect(linea.tamano?.nombre).toBe('Pequeño');
   });
 
+  it('muestra los sabores y toppings de la base de datos, en orden y sin los inactivos', async () => {
+    const f = await crear();
+    const el: HTMLElement = f.nativeElement;
+    click(el, 'Personalizar');
+    await f.whenStable();
+    const grupos = Array.from(el.querySelectorAll('.panel fieldset')).map((g) => ({
+      titulo: g.querySelector('legend')!.textContent!.trim(),
+      opciones: Array.from(g.querySelectorAll('button')).map((b) => b.textContent!.replace(/\s+/g, ' ').trim()),
+    }));
+    expect(grupos.slice(1)).toEqual([
+      { titulo: 'Sabores', opciones: ['Vainilla', 'Fresa'] },
+      { titulo: 'Toppings', opciones: ['Maní'] },
+    ]);
+  });
+
   it('un producto con tamaños muestra "Desde" y no se agrega sin abrir el panel', async () => {
     const f = await crear();
     const el: HTMLElement = f.nativeElement;
@@ -135,12 +157,14 @@ describe('Menu', () => {
     http.expectOne('/api/Categorias').flush('x', { status: 500, statusText: 'Error' });
     http.match('/api/Productos'); // las peticiones paralelas quedan canceladas por forkJoin
     http.match('/api/Tamanos');
+    http.match('/api/Opciones');
     await f.whenStable();
     expect(f.nativeElement.querySelector('[role=alert]')).toBeTruthy();
     click(f.nativeElement, 'Reintentar');
     http.expectOne('/api/Categorias').flush(categorias);
     http.expectOne('/api/Productos').flush(productos);
     http.expectOne('/api/Tamanos').flush(tamanos);
+    http.expectOne('/api/Opciones').flush(opciones);
     await f.whenStable();
     expect(f.nativeElement.querySelector('[role=alert]')).toBeNull();
   });

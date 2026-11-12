@@ -325,6 +325,148 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  /api/Opciones:
+    get:
+      tags:
+        - Opciones
+      summary: 'Obtiene los sabores y toppings (activos e inactivos), con filtros opcionales.'
+      parameters:
+        - name: categoriaId
+          in: query
+          description: 'Si se indica, solo devuelve las opciones de esa categoría.'
+          schema:
+            type: integer
+            format: int32
+        - name: tipo
+          in: query
+          description: 'Si se indica ("Sabor" o "Topping"), solo devuelve ese tipo.'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Devuelve la lista de opciones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Opcion'
+        '400':
+          description: El tipo no es válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    post:
+      tags:
+        - Opciones
+      summary: Crea un sabor o topping para los productos de una categoría.
+      requestBody:
+        description: 'Categoría, tipo, nombre, orden y disponibilidad.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpcionRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/OpcionRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/OpcionRequest'
+      responses:
+        '201':
+          description: Opción creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opcion'
+        '400':
+          description: Los datos no son válidos o la categoría no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe una opción de ese tipo con ese nombre en la categoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Opciones/{id}':
+    get:
+      tags:
+        - Opciones
+      summary: Obtiene un sabor o topping por su identificador.
+      parameters:
+        - name: id
+          in: path
+          description: Identificador de la opción.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Devuelve la opción.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opcion'
+        '404':
+          description: No existe una opción con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+    put:
+      tags:
+        - Opciones
+      summary: "Edita un sabor o topping. Para dejar de ofrecerlo se marca como inactivo (Activo = false).\r\nLos pedidos antiguos no cambian: guardan el nombre que se eligió."
+      parameters:
+        - name: id
+          in: path
+          description: Identificador de la opción.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Datos nuevos de la opción.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpcionRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/OpcionRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/OpcionRequest'
+      responses:
+        '200':
+          description: Devuelve la opción actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opcion'
+        '400':
+          description: Los datos no son válidos o la categoría no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe una opción con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Ya existe otra opción de ese tipo con ese nombre en la categoría.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /api/Pedidos:
     get:
       tags:
@@ -363,7 +505,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Pedido'
         '400':
-          description: 'Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.'
+          description: 'Los datos no son válidos, algún producto no está disponible, falta elegir un tamaño válido o algún sabor o topping no está disponible.'
           content:
             application/json:
               schema:
@@ -490,7 +632,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Pedido'
         '400':
-          description: 'Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.'
+          description: 'Los datos no son válidos, algún producto no está disponible, falta elegir un tamaño válido o algún sabor o topping no está disponible.'
           content:
             application/json:
               schema:
@@ -647,7 +789,7 @@ paths:
     get:
       tags:
         - Productos
-      summary: 'Obtiene el detalle de un producto, incluidos los tamaños que se pueden elegir.'
+      summary: 'Obtiene el detalle de un producto, incluidos los tamaños, sabores y toppings que se pueden elegir.'
       parameters:
         - name: id
           in: path
@@ -658,7 +800,7 @@ paths:
             format: int32
       responses:
         '200':
-          description: Devuelve el producto con sus tamaños activos.
+          description: 'Devuelve el producto con sus tamaños, sabores y toppings activos.'
           content:
             application/json:
               schema:
@@ -1154,12 +1296,12 @@ components:
         sabores:
           maxLength: 200
           type: string
-          description: 'Sabores elegidos (ej. "Vainilla, Chocolate"). Máximo 200 caracteres.'
+          description: "Sabores elegidos, separados por coma (ej. \"Vainilla, Chocolate\"). Máximo 200 caracteres.\r\nDeben ser sabores activos de la categoría del producto (ver `GET /api/Opciones`)."
           nullable: true
         toppings:
           maxLength: 200
           type: string
-          description: 'Toppings o adicionales (ej. "Chispas, Maní"). Máximo 200 caracteres.'
+          description: "Toppings elegidos, separados por coma (ej. \"Chispas de chocolate, Maní\"). Máximo 200 caracteres.\r\nDeben ser toppings activos de la categoría del producto (ver `GET /api/Opciones`)."
           nullable: true
         observaciones:
           maxLength: 300
@@ -1212,6 +1354,60 @@ components:
           type: boolean
           readOnly: true
       additionalProperties: false
+    Opcion:
+      type: object
+      properties:
+        opcionId:
+          type: integer
+          format: int32
+        categoriaId:
+          type: integer
+          format: int32
+        tipo:
+          type: string
+          nullable: true
+        nombre:
+          type: string
+          nullable: true
+        orden:
+          type: integer
+          format: int32
+        activo:
+          type: boolean
+      additionalProperties: false
+    OpcionRequest:
+      required:
+        - nombre
+        - tipo
+      type: object
+      properties:
+        categoriaId:
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+          description: Categoría a cuyos productos aplica.
+          format: int32
+        tipo:
+          minLength: 1
+          type: string
+          description: '"Sabor" o "Topping".'
+        nombre:
+          maxLength: 50
+          minLength: 1
+          pattern: '[^,]*[^,\s][^,]*'
+          type: string
+          description: "Nombre de la opción (ej. \"Chocolate\"). Máximo 50 caracteres y sin comas,\r\nporque el pedido guarda los nombres elegidos separados por coma."
+        orden:
+          maximum: 1000
+          minimum: 0
+          type: integer
+          description: Posición en la que se muestra (de menor a mayor).
+          format: int32
+        activo:
+          type: boolean
+          description: 'Si la opción se puede elegir. Por defecto, sí.'
+      additionalProperties: false
+      description: Datos para crear o editar un sabor o topping.
     Pedido:
       type: object
       properties:
@@ -1302,8 +1498,20 @@ components:
             $ref: '#/components/schemas/Tamano'
           description: Tamaños activos de la categoría del producto (vacío si no maneja tamaños).
           nullable: true
+        sabores:
+          type: array
+          items:
+            $ref: '#/components/schemas/Opcion'
+          description: Sabores activos de la categoría del producto (vacío si no se personaliza).
+          nullable: true
+        toppings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Opcion'
+          description: Toppings activos de la categoría del producto (vacío si no se personaliza).
+          nullable: true
       additionalProperties: false
-      description: Producto con los tamaños que se pueden elegir para él.
+      description: 'Producto con los tamaños, sabores y toppings que se pueden elegir para él.'
     ProductoRequest:
       required:
         - nombre
@@ -1438,6 +1646,7 @@ tags:
   - name: Auth
   - name: Categorias
   - name: Mesas
+  - name: Opciones
   - name: Pedidos
   - name: Productos
   - name: Tamanos

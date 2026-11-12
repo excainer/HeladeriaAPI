@@ -46,6 +46,7 @@ namespace HeladeriaAPI
             builder.Services.AddScoped<IMesaQueries, MesaQueries>();
             builder.Services.AddScoped<IPedidoQueries, PedidoQueries>();
             builder.Services.AddScoped<ITamanoQueries, TamanoQueries>();
+            builder.Services.AddScoped<IOpcionQueries, OpcionQueries>();
             builder.Services.AddScoped<IUsuarioQueries, UsuarioQueries>();
 
             // Capa Repository (escritura)
@@ -54,6 +55,7 @@ namespace HeladeriaAPI
             builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
             builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
             builder.Services.AddScoped<ITamanoRepository, TamanoRepository>();
+            builder.Services.AddScoped<IOpcionRepository, OpcionRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<IMesaRepository, MesaRepository>();
 

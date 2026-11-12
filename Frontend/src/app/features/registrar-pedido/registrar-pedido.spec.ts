@@ -29,6 +29,7 @@ describe('RegistrarPedido', () => {
     http.expectOne('/api/Categorias').flush([{ categoriaId: 3, nombre: 'Postres' }]);
     http.expectOne('/api/Productos').flush([{ productoId: 6, categoriaId: 3, nombre: 'Brownie', precio: 7000, activo: true }]);
     http.expectOne('/api/Tamanos').flush([]);
+    http.expectOne('/api/Opciones').flush([]);
     await f.whenStable();
     return f;
   }

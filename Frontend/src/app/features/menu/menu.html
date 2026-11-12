@@ -28,6 +28,8 @@
       @for (producto of productosVisibles(); track producto.productoId) {
         @let tamanos = tamanosDe(producto);
         @let personalizable = esPersonalizable(producto);
+        @let sabores = saboresDe(producto);
+        @let toppings = toppingsDe(producto);
         <li class="producto" [class.producto--abierto]="abierto() === producto.productoId">
           <div class="producto__fila">
             <h2 class="producto__nombre">{{ producto.nombre }}</h2>
@@ -70,7 +72,7 @@
                 </fieldset>
               }
 
-              @if (personalizable) {
+              @if (sabores.length > 0) {
                 <fieldset class="grupo">
                   <legend>Sabores</legend>
                   <div class="opciones">
@@ -84,7 +86,9 @@
                     }
                   </div>
                 </fieldset>
+              }
 
+              @if (toppings.length > 0) {
                 <fieldset class="grupo">
                   <legend>Toppings</legend>
                   <div class="opciones">

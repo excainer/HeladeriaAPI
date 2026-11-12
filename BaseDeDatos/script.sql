@@ -55,6 +55,19 @@ CREATE TABLE dbo.Tamanos (
     Activo BIT NOT NULL DEFAULT 1
 );
 
+-- Sabores y toppings que se pueden elegir para los productos de una categoría (ej. Helados).
+-- No cambian el precio. El detalle del pedido guarda los nombres elegidos como texto,
+-- así un pedido antiguo conserva lo que se pidió aunque luego se renombre o desactive la opción.
+IF OBJECT_ID('dbo.Opciones') IS NULL
+CREATE TABLE dbo.Opciones (
+    OpcionId INT IDENTITY(1,1) PRIMARY KEY,
+    CategoriaId INT NOT NULL REFERENCES dbo.Categorias(CategoriaId),
+    Tipo NVARCHAR(20) NOT NULL CONSTRAINT CK_Opciones_Tipo CHECK (Tipo IN (N'Sabor', N'Topping')),
+    Nombre NVARCHAR(50) NOT NULL,
+    Orden INT NOT NULL DEFAULT 0,
+    Activo BIT NOT NULL DEFAULT 1
+);
+
 IF OBJECT_ID('dbo.DetallesPedido') IS NULL
 CREATE TABLE dbo.DetallesPedido (
     DetallePedidoId INT IDENTITY(1,1) PRIMARY KEY,
@@ -151,6 +164,20 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Tamanos)
         (N'Bebidas', N'Grande',                    2500, 2)
     ) AS t (Categoria, Nombre, PrecioAdicional, Orden)
     JOIN dbo.Categorias c ON c.Nombre = t.Categoria;
+
+-- Sabores y toppings de ejemplo (los que antes estaban fijos en el frontend).
+-- Se agregan también a bases existentes si la tabla está vacía.
+IF NOT EXISTS (SELECT 1 FROM dbo.Opciones)
+    INSERT INTO dbo.Opciones (CategoriaId, Tipo, Nombre, Orden, Activo)
+    SELECT c.CategoriaId, o.Tipo, o.Nombre, o.Orden, 1
+    FROM (VALUES
+        (N'Helados', N'Sabor',   N'Vainilla',             1),
+        (N'Helados', N'Sabor',   N'Chocolate',            2),
+        (N'Helados', N'Sabor',   N'Fresa',                3),
+        (N'Helados', N'Topping', N'Chispas de chocolate', 1),
+        (N'Helados', N'Topping', N'Man' + NCHAR(237),     2)   -- "Maní"
+    ) AS o (Categoria, Tipo, Nombre, Orden)
+    JOIN dbo.Categorias c ON c.Nombre = o.Categoria;
 
 -- Administrador inicial: usuario "admin", contraseña "HeladApp2026".
 -- CÁMBIALA en "Mi cuenta" la primera vez que entres (solo se crea si no hay ningún usuario).

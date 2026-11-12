@@ -18,17 +18,20 @@ namespace HeladeriaAPI.Controllers
         private readonly IProductoQueries _productoQueries;
         private readonly ICategoriaQueries _categoriaQueries;
         private readonly ITamanoQueries _tamanoQueries;
+        private readonly IOpcionQueries _opcionQueries;
         private readonly IProductoRepository _productoRepository;
 
         public ProductosController(
             IProductoQueries productoQueries,
             ICategoriaQueries categoriaQueries,
             ITamanoQueries tamanoQueries,
+            IOpcionQueries opcionQueries,
             IProductoRepository productoRepository)
         {
             _productoQueries = productoQueries;
             _categoriaQueries = categoriaQueries;
             _tamanoQueries = tamanoQueries;
+            _opcionQueries = opcionQueries;
             _productoRepository = productoRepository;
         }
 
@@ -47,10 +50,10 @@ namespace HeladeriaAPI.Controllers
         }
 
         /// <summary>
-        /// Obtiene el detalle de un producto, incluidos los tamaños que se pueden elegir.
+        /// Obtiene el detalle de un producto, incluidos los tamaños, sabores y toppings que se pueden elegir.
         /// </summary>
         /// <param name="id">Identificador del producto.</param>
-        /// <response code="200">Devuelve el producto con sus tamaños activos.</response>
+        /// <response code="200">Devuelve el producto con sus tamaños, sabores y toppings activos.</response>
         /// <response code="404">No existe un producto con ese id.</response>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ProductoDetalle), StatusCodes.Status200OK)]
@@ -64,6 +67,10 @@ namespace HeladeriaAPI.Controllers
                 .Where(t => t.Activo)
                 .ToList();
 
+            var opciones = (await _opcionQueries.ObtenerPorCategoriaAsync(producto.CategoriaId))
+                .Where(o => o.Activo)
+                .ToList();
+
             return Ok(new ProductoDetalle
             {
                 ProductoId = producto.ProductoId,
@@ -71,7 +78,9 @@ namespace HeladeriaAPI.Controllers
                 Nombre = producto.Nombre,
                 Precio = producto.Precio,
                 Activo = producto.Activo,
-                Tamanos = tamanos
+                Tamanos = tamanos,
+                Sabores = opciones.Where(o => o.Tipo == Opcion.TipoSabor).ToList(),
+                Toppings = opciones.Where(o => o.Tipo == Opcion.TipoTopping).ToList()
             });
         }
 
@@ -168,12 +177,18 @@ namespace HeladeriaAPI.Controllers
     }
 
     /// <summary>
-    /// Producto con los tamaños que se pueden elegir para él.
+    /// Producto con los tamaños, sabores y toppings que se pueden elegir para él.
     /// </summary>
     public class ProductoDetalle : Producto
     {
         /// <summary>Tamaños activos de la categoría del producto (vacío si no maneja tamaños).</summary>
         public List<Tamano> Tamanos { get; set; } = new();
+
+        /// <summary>Sabores activos de la categoría del producto (vacío si no se personaliza).</summary>
+        public List<Opcion> Sabores { get; set; } = new();
+
+        /// <summary>Toppings activos de la categoría del producto (vacío si no se personaliza).</summary>
+        public List<Opcion> Toppings { get; set; } = new();
     }
 
     /// <summary>

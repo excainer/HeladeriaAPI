@@ -115,6 +115,13 @@ export const routes: Routes = [
           import('./features/tamanos/tamanos').then(m => m.Tamanos)
       },
       {
+        path: 'opciones',
+        title: 'Sabores y toppings · HeladApp',
+        canActivate: [administradorGuard],
+        loadComponent: () =>
+          import('./features/opciones/opciones').then(m => m.Opciones)
+      },
+      {
         path: 'usuarios',
         title: 'Usuarios · HeladApp',
         canActivate: [administradorGuard],

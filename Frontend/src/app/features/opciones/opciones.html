@@ -1,0 +1,99 @@
+<section class="lectura">
+  <div class="encabezado">
+    <h1>Sabores y toppings</h1>
+    @if (!cargando() && !error() && editando() === null) {
+      <div class="acciones">
+        <button type="button" class="boton" (click)="nuevo('Sabor')">Nuevo sabor</button>
+        <button type="button" class="boton" (click)="nuevo('Topping')">Nuevo topping</button>
+      </div>
+    }
+  </div>
+  <p class="ayuda">
+    Si una categoría tiene sabores o toppings disponibles, el cliente puede elegirlos al pedir sus productos.
+    No cambian el precio. Los pedidos ya hechos conservan lo que se eligió aunque luego edites o desactives la opción.
+  </p>
+
+  @if (aviso()) {
+    <p class="mensaje-exito" role="status">{{ aviso() }}</p>
+  }
+
+  @if (editando() !== null) {
+    <form class="formulario" (submit)="$event.preventDefault(); guardar()" aria-labelledby="titulo-formulario">
+      <h2 id="titulo-formulario">{{ editando() === 0 ? 'Nuevo ' + etiqueta(tipo()) : 'Editar ' + etiqueta(tipo()) }}</h2>
+      <div class="campos">
+        <label class="campo">
+          Categoría
+          <select #campoCategoria (change)="cambiarCategoria(campoCategoria.value)">
+            @for (c of categorias(); track c.categoriaId) {
+              <option [value]="c.categoriaId" [selected]="c.categoriaId === categoriaId()">{{ c.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="campo">
+          Tipo
+          <select #campoTipo (change)="cambiarTipo(campoTipo.value)">
+            @for (t of tipos; track t) {
+              <option [value]="t" [selected]="t === tipo()">{{ t }}</option>
+            }
+          </select>
+        </label>
+        <label class="campo">
+          Nombre
+          <input #campoNombre type="text" maxlength="50" required
+                 [placeholder]="tipo() === 'Sabor' ? 'Ej. Mango' : 'Ej. Gomitas'"
+                 [value]="nombre()" (input)="nombre.set(campoNombre.value)" />
+        </label>
+        <label class="campo">
+          Orden
+          <input #campoOrden type="number" min="0" step="1" inputmode="numeric" [value]="orden()" (input)="orden.set(campoOrden.value)" />
+        </label>
+      </div>
+      <label class="casilla">
+        <input #campoActivo type="checkbox" [checked]="activo()" (change)="activo.set(campoActivo.checked)" />
+        Disponible para elegir
+      </label>
+      @if (errorFormulario()) {
+        <p class="mensaje-error" role="alert">{{ errorFormulario() }}</p>
+      }
+      <div class="acciones">
+        <button type="submit" class="boton" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+        <button type="button" class="boton boton--secundario" (click)="cancelar()">Cancelar</button>
+      </div>
+    </form>
+  }
+
+  @if (cargando()) {
+    <p role="status">Cargando sabores y toppings…</p>
+  } @else if (error()) {
+    <div class="aviso" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla">
+      <table>
+        <caption class="solo-lectores">Lista de sabores y toppings por categoría</caption>
+        <thead><tr><th scope="col">Categoría</th><th scope="col">Tipo</th><th scope="col">Nombre</th><th scope="col">Orden</th><th scope="col">Estado</th><th scope="col"><span class="solo-lectores">Acciones</span></th></tr></thead>
+        <tbody>
+          @for (o of filas(); track o.opcionId) {
+            <tr [class.inactivo]="!o.activo">
+              <td>{{ o.categoria }}</td>
+              <td>{{ o.tipo }}</td>
+              <th scope="row">{{ o.nombre }}</th>
+              <td>{{ o.orden }}</td>
+              <td>{{ o.activo ? 'Disponible' : 'No disponible' }}</td>
+              <td>
+                <div class="acciones">
+                  <button type="button" class="boton boton--secundario boton--chico" [attr.aria-label]="'Editar ' + o.nombre + ' de ' + o.categoria" (click)="editar(o)">Editar</button>
+                  <button type="button" class="boton boton--secundario boton--chico" [disabled]="guardando()" (click)="alternarActivo(o)">{{ o.activo ? 'Desactivar' : 'Activar' }}</button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6">Todavía no hay sabores ni toppings. Los productos se piden sin personalizar.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

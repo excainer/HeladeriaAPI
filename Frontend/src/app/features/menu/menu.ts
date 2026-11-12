@@ -1,18 +1,15 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import {
-  CATEGORIA_EXTRAS,
-  CATEGORIA_PERSONALIZABLE,
-  SABORES,
-  TOPPINGS,
-} from '../../core/constants/opciones-producto';
+import { CATEGORIA_EXTRAS } from '../../core/constants/opciones-producto';
 import { ApiError } from '../../core/models/api-error.model';
 import { Categoria } from '../../core/models/categoria.model';
+import { Opcion } from '../../core/models/opcion.model';
 import { Producto } from '../../core/models/producto.model';
 import { Tamano } from '../../core/models/tamano.model';
 import { CarritoService } from '../../core/services/carrito';
 import { CategoriaService } from '../../core/services/categoria';
+import { OpcionService } from '../../core/services/opcion';
 import { ProductoService } from '../../core/services/producto';
 import { TamanoService } from '../../core/services/tamano';
 import { Pesos } from '../../shared/pipes/pesos';
@@ -21,7 +18,7 @@ const mismoNombre = (a: string, b: string) => a.trim().toLowerCase() === b.trim(
 
 /**
  * Menú por categorías. Los productos cuya categoría tiene tamaños obligan a elegir uno;
- * los helados además se pueden personalizar con sabores, toppings y notas.
+ * si la categoría tiene sabores o toppings activos, también se pueden personalizar.
  */
 @Component({
   selector: 'app-menu',
@@ -34,17 +31,16 @@ export class Menu {
   private readonly categoriaService = inject(CategoriaService);
   private readonly productoService = inject(ProductoService);
   private readonly tamanoService = inject(TamanoService);
+  private readonly opcionService = inject(OpcionService);
   protected readonly carrito = inject(CarritoService);
 
   /** Dentro de "Nuevo pedido" del personal: sin título ni barra de "Ver pedido" (el carrito va al lado). */
   readonly modoPersonal = input(false);
 
-  protected readonly sabores = SABORES;
-  protected readonly toppings = TOPPINGS;
-
   private readonly categorias = signal<Categoria[]>([]);
   private readonly productos = signal<Producto[]>([]);
   private readonly tamanos = signal<Tamano[]>([]);
+  private readonly opciones = signal<Opcion[]>([]);
 
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -79,8 +75,9 @@ export class Menu {
       categorias: this.categoriaService.obtenerTodos(),
       productos: this.productoService.obtenerTodos(),
       tamanos: this.tamanoService.obtenerTodos(),
+      opciones: this.opcionService.obtenerTodos(),
     }).subscribe({
-      next: ({ categorias, productos, tamanos }) => {
+      next: ({ categorias, productos, tamanos, opciones }) => {
         const visibles = categorias.filter((c) => !mismoNombre(c.nombre, CATEGORIA_EXTRAS));
         const idsVisibles = new Set(visibles.map((c) => c.categoriaId));
 
@@ -89,6 +86,7 @@ export class Menu {
         // el cliente no debe verlos.
         this.productos.set(productos.filter((p) => p.activo && idsVisibles.has(p.categoriaId)));
         this.tamanos.set(tamanos.filter((t) => t.activo).sort((a, b) => a.orden - b.orden));
+        this.opciones.set(opciones.filter((o) => o.activo).sort((a, b) => a.orden - b.orden));
         this.categoriaActiva.set(this.categoriasConProductos()[0]?.categoriaId ?? null);
         this.cargando.set(false);
       },
@@ -104,9 +102,24 @@ export class Menu {
     this.cerrarPanel();
   }
 
+  /** Nombres de los sabores activos de la categoría del producto, en su orden. */
+  protected saboresDe(producto: Producto): string[] {
+    return this.opcionesDe(producto, 'Sabor');
+  }
+
+  /** Nombres de los toppings activos de la categoría del producto, en su orden. */
+  protected toppingsDe(producto: Producto): string[] {
+    return this.opcionesDe(producto, 'Topping');
+  }
+
   protected esPersonalizable(producto: Producto): boolean {
-    const categoria = this.categorias().find((c) => c.categoriaId === producto.categoriaId);
-    return !!categoria && mismoNombre(categoria.nombre, CATEGORIA_PERSONALIZABLE);
+    return this.opciones().some((o) => o.categoriaId === producto.categoriaId);
+  }
+
+  private opcionesDe(producto: Producto, tipo: Opcion['tipo']): string[] {
+    return this.opciones()
+      .filter((o) => o.categoriaId === producto.categoriaId && o.tipo === tipo)
+      .map((o) => o.nombre);
   }
 
   /** Tamaños activos de la categoría del producto, en su orden. */

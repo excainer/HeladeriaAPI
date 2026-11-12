@@ -16,6 +16,7 @@ const ENLACES: readonly Enlace[] = [
   { ruta: 'productos', texto: 'Productos', soloAdministrador: true },
   { ruta: 'categorias', texto: 'Categorías', soloAdministrador: true },
   { ruta: 'tamanos', texto: 'Tamaños', soloAdministrador: true },
+  { ruta: 'opciones', texto: 'Sabores y toppings', soloAdministrador: true },
   { ruta: 'mesas', texto: 'Mesas' },
   { ruta: 'usuarios', texto: 'Usuarios', soloAdministrador: true },
 ];
