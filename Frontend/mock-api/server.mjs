@@ -25,6 +25,7 @@ const usuarios = [
   { usuarioId: 2, nombreUsuario: 'cocina', nombre: 'Cocina', rol: 'Empleado', activo: true, clave: 'cocina2026' },
   ...[['excainer', 'Juan Gallo'], ['alejandro', 'Alejandro Ortega'], ['alexander', 'Alexander Vélez'], ['pedro', 'Pedro Vidal']]
     .map(([nombreUsuario, nombre], i) => ({ usuarioId: i + 3, nombreUsuario, nombre, rol: 'Administrador', activo: true, clave: '12345678' })),
+  { usuarioId: 7, nombreUsuario: 'juan', nombre: 'Juan Silva', rol: 'Empleado', activo: true, clave: '12345678' },
 ];
 const sesiones = new Map(); // token de la cookie → usuarioId
 const ROLES = ['Administrador', 'Empleado'];

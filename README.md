@@ -129,15 +129,16 @@ Los **clientes no inician sesión**: eligen su mesa, piden y siguen su pedido si
 | **Empleado** | Cocina (avanzar pedidos), historial de pedidos, resumen y mesas |
 | **Administrador** | Todo lo anterior, más editar productos, categorías y tamaños, y gestionar los usuarios |
 
-**Usuarios iniciales** (los crea el script; todos son administradores):
+**Usuarios iniciales** (los crea el script):
 
-| Usuario | Nombre | Contraseña inicial |
-|---|---|---|
-| `admin` | Administrador | `HeladApp2026` |
-| `excainer` | Juan Gallo | `12345678` |
-| `alejandro` | Alejandro Ortega | `12345678` |
-| `alexander` | Alexander Vélez | `12345678` |
-| `pedro` | Pedro Vidal | `12345678` |
+| Usuario | Nombre | Rol | Contraseña inicial |
+|---|---|---|---|
+| `admin` | Administrador | Administrador | `HeladApp2026` |
+| `excainer` | Juan Gallo | Administrador | `12345678` |
+| `alejandro` | Alejandro Ortega | Administrador | `12345678` |
+| `alexander` | Alexander Vélez | Administrador | `12345678` |
+| `pedro` | Pedro Vidal | Administrador | `12345678` |
+| `juan` | Juan Silva | Empleado | `12345678` |
 
 **Estas contraseñas son públicas: cámbienlas en "Mi cuenta" la primera vez que entren** y creen un usuario para cada trabajador en "Usuarios".
 
