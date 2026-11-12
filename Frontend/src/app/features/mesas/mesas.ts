@@ -27,6 +27,31 @@ export class Mesas {
 
   protected readonly ocupadas = computed(() => this.mesas().filter((m) => this.estaOcupada(m)).length);
 
+  // Liberación de mesas.
+  protected readonly liberando = signal<number | null>(null);
+  protected readonly aviso = signal<string | null>(null);
+  protected readonly errorLiberar = signal<string | null>(null);
+
+  protected liberar(m: Mesa) {
+    if (this.liberando() !== null) return;
+    this.liberando.set(m.mesaId);
+    this.aviso.set(null);
+    this.errorLiberar.set(null);
+    this.mesaService.liberar(m.mesaId).subscribe({
+      next: (actualizada) => {
+        this.mesas.update((lista) => lista.map((x) => (x.mesaId === m.mesaId ? actualizada : x)));
+        this.liberando.set(null);
+        this.aviso.set(`Mesa ${m.numero} liberada: ya está disponible.`);
+      },
+      error: (e: unknown) => {
+        this.liberando.set(null);
+        this.errorLiberar.set(mensajeError(e, `No se pudo liberar la mesa ${m.numero}.`));
+        // Si alguien pidió justo antes (409), se recarga para mostrar el estado real.
+        this.refrescar.next();
+      },
+    });
+  }
+
   constructor() {
     sondeo(() => this.mesaService.obtenerTodos(), this.refrescar)
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
@@ -51,6 +76,7 @@ export class Mesas {
 
   protected detalle(m: Mesa): string {
     const n = m.pedidosActivos ?? 0;
-    return n === 0 ? '' : n === 1 ? '1 pedido en curso' : `${n} pedidos en curso`;
+    if (n > 0) return n === 1 ? '1 pedido en curso' : `${n} pedidos en curso`;
+    return m.puedeLiberarse ? 'Todo entregado' : '';
   }
 }

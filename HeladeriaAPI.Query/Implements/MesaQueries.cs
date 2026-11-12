@@ -9,19 +9,23 @@ namespace HeladeriaAPI.Query.Implements
 {
     /// <summary>
     /// Consultas sobre las mesas. El estado se calcula a partir de los pedidos:
-    /// una mesa con algún pedido sin entregar está "Ocupada"; si no, vale lo guardado (normalmente "Disponible").
-    /// Así el estado nunca queda desactualizado.
+    /// una mesa está "Ocupada" desde su primer pedido posterior a la última liberación
+    /// (o mientras tenga pedidos sin entregar) hasta que el personal la libera.
     /// </summary>
     public class MesaQueries : IMesaQueries
     {
         private const string Consulta = @"
-            SELECT m.MesaId, m.Numero,
-                   CASE WHEN a.Activos > 0 THEN N'Ocupada' ELSE m.Estado END AS Estado,
-                   a.Activos AS PedidosActivos
+            SELECT m.MesaId, m.Numero, m.LiberadaEn,
+                   CASE WHEN a.Activos > 0 OR d.DesdeLiberacion > 0 THEN N'Ocupada' ELSE m.Estado END AS Estado,
+                   a.Activos AS PedidosActivos,
+                   d.DesdeLiberacion AS PedidosDesdeLiberacion
             FROM Mesas m
             OUTER APPLY (SELECT COUNT(*) AS Activos
                          FROM Pedidos p
-                         WHERE p.MesaId = m.MesaId AND p.Estado <> N'Entregado') a";
+                         WHERE p.MesaId = m.MesaId AND p.Estado <> N'Entregado') a
+            OUTER APPLY (SELECT COUNT(*) AS DesdeLiberacion
+                         FROM Pedidos p
+                         WHERE p.MesaId = m.MesaId AND (m.LiberadaEn IS NULL OR p.Fecha > m.LiberadaEn)) d";
 
         private readonly IDbConnection _conexion;
 

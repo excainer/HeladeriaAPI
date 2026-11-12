@@ -59,4 +59,38 @@ describe('Mesas', () => {
     await vi.advanceTimersByTimeAsync(0); TestBed.tick();
     expect(f.nativeElement.querySelector('[role=alert]')).toBeNull();
   });
+
+  it('muestra "Liberar mesa" solo cuando todo está entregado y la libera', async () => {
+    const f = await crear();
+    http.expectOne('/api/Mesas').flush([
+      { mesaId: 1, numero: 1, estado: 'Ocupada', pedidosActivos: 1, pedidosDesdeLiberacion: 1, puedeLiberarse: false },
+      { mesaId: 2, numero: 2, estado: 'Ocupada', pedidosActivos: 0, pedidosDesdeLiberacion: 2, puedeLiberarse: true },
+    ]);
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    const el: HTMLElement = f.nativeElement;
+    const botones = el.querySelectorAll<HTMLButtonElement>('.liberar');
+    expect(botones.length).toBe(1);
+    expect(botones[0].getAttribute('aria-label')).toBe('Liberar mesa 2');
+    expect(textos(el)[1]).toContain('Todo entregado');
+
+    botones[0].click();
+    const req = http.expectOne('/api/Mesas/2/liberar');
+    expect(req.request.method).toBe('POST');
+    req.flush({ mesaId: 2, numero: 2, estado: 'Disponible', pedidosActivos: 0, pedidosDesdeLiberacion: 0, puedeLiberarse: false });
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(textos(el)[1]).toBe('Mesa 2Disponible');
+    expect(el.querySelector('.mensaje-exito')!.textContent).toContain('Mesa 2 liberada');
+  });
+
+  it('si la API no deja liberar (pedido nuevo), muestra el motivo y recarga', async () => {
+    const f = await crear();
+    http.expectOne('/api/Mesas').flush([{ mesaId: 2, numero: 2, estado: 'Ocupada', pedidosActivos: 0, pedidosDesdeLiberacion: 1, puedeLiberarse: true }]);
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    (f.nativeElement.querySelector('.liberar') as HTMLButtonElement).click();
+    http.expectOne('/api/Mesas/2/liberar').flush('La mesa 2 tiene 1 pedido sin entregar. Entrégalos antes de liberarla.', { status: 409, statusText: 'Conflict' });
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(f.nativeElement.querySelector('.mensaje-error').textContent).toContain('sin entregar');
+    http.expectOne('/api/Mesas'); // recarga el estado real
+  });
 });
+

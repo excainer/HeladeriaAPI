@@ -38,10 +38,17 @@ const enviar = (res, status, cuerpo) => {
   res.end(JSON.stringify(cuerpo));
 };
 
-// Igual que la API real: la mesa está ocupada mientras tenga pedidos sin entregar.
+// Igual que la API real: la mesa está ocupada desde su primer pedido posterior a la última
+// liberación (o mientras tenga pedidos sin entregar) hasta que el personal la libera.
 const conOcupacion = (m) => {
-  const pedidosActivos = pedidos.filter((p) => p.mesaId === m.mesaId && p.estado !== 'Entregado').length;
-  return { ...m, estado: pedidosActivos > 0 ? 'Ocupada' : m.estado, pedidosActivos };
+  const deLaMesa = pedidos.filter((p) => p.mesaId === m.mesaId);
+  const pedidosActivos = deLaMesa.filter((p) => p.estado !== 'Entregado').length;
+  const pedidosDesdeLiberacion = deLaMesa.filter((p) => !m.liberadaEn || p.fecha > m.liberadaEn).length;
+  const ocupada = pedidosActivos > 0 || pedidosDesdeLiberacion > 0;
+  return {
+    ...m, liberadaEn: m.liberadaEn ?? null, estado: ocupada ? 'Ocupada' : m.estado,
+    pedidosActivos, pedidosDesdeLiberacion, puedeLiberarse: pedidosActivos === 0 && pedidosDesdeLiberacion > 0,
+  };
 };
 
 const siguienteId = (lista, campo) => Math.max(0, ...lista.map((x) => x[campo])) + 1;
@@ -148,6 +155,19 @@ createServer((req, res) => {
     const edicionCatalogo = ['categorias', 'productos', 'tamanos'].includes(recurso) && ['POST', 'PUT'].includes(req.method);
     if ((listaDePedidos || cambioDeEstado || edicionCatalogo) && !yo) return sinSesion();
     if (edicionCatalogo && !esAdmin) return sinPermiso();
+
+    if (recurso === 'mesas' && req.method === 'POST' && b?.toLowerCase() === 'liberar') {
+      if (!yo) return sinSesion();
+      const mesa = mesas.find((m) => m.mesaId === Number(a));
+      if (!mesa) return enviar(res, 404);
+      const { pedidosActivos } = conOcupacion(mesa);
+      if (pedidosActivos > 0) {
+        const texto = pedidosActivos === 1 ? '1 pedido sin entregar' : `${pedidosActivos} pedidos sin entregar`;
+        return enviar(res, 409, `La mesa ${mesa.numero} tiene ${texto}. Entrégalos antes de liberarla.`);
+      }
+      mesa.liberadaEn = new Date().toISOString();
+      return enviar(res, 200, conOcupacion(mesa));
+    }
 
     if (req.method === 'GET') {
       if (recurso === 'categorias') return a ? lectura(categorias, a, 'categoriaId') : enviar(res, 200, categorias);

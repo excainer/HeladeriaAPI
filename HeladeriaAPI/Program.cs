@@ -55,6 +55,7 @@ namespace HeladeriaAPI
             builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
             builder.Services.AddScoped<ITamanoRepository, TamanoRepository>();
             builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            builder.Services.AddScoped<IMesaRepository, MesaRepository>();
 
             // Sesión del personal: cookie HttpOnly. Los clientes no inician sesión.
             builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();

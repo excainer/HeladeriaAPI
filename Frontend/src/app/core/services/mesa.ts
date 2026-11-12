@@ -20,6 +20,11 @@ export class MesaService {
     return this.api.get<Mesa>(`${this.endpoint}/${id}`);
   }
 
+  /** Libera la mesa (personal). Falla con 409 si tiene pedidos sin entregar. */
+  liberar(id: number) {
+    return this.api.post<Mesa>(`${this.endpoint}/${id}/liberar`, {});
+  }
+
   /**
    * Busca la mesa por su número visible (el del código QR), no por su id.
    * Devuelve undefined si no existe; cualquier otro error se propaga.

@@ -39,4 +39,12 @@ describe('MesaService', () => {
     http.expectOne('/api/Mesas/numero/2').flush('x', { status: 500, statusText: 'Error' });
     expect((error as { status: number }).status).toBe(500);
   });
+
+  it('libera una mesa con POST', () => {
+    service.liberar(4).subscribe();
+    const req = http.expectOne('/api/Mesas/4/liberar');
+    expect(req.request.method).toBe('POST');
+    req.flush({ mesaId: 4, numero: 4, estado: 'Disponible' });
+  });
 });
+

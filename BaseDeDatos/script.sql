@@ -29,7 +29,9 @@ IF OBJECT_ID('dbo.Mesas') IS NULL
 CREATE TABLE dbo.Mesas (
     MesaId INT IDENTITY(1,1) PRIMARY KEY,
     Numero INT NOT NULL,
-    Estado NVARCHAR(30) NOT NULL DEFAULT 'Disponible'
+    Estado NVARCHAR(30) NOT NULL DEFAULT 'Disponible',
+    -- Última vez que el personal liberó la mesa. Está ocupada si tiene pedidos posteriores.
+    LiberadaEn DATETIME NULL
 );
 
 IF OBJECT_ID('dbo.Pedidos') IS NULL
@@ -77,6 +79,15 @@ CREATE TABLE dbo.Usuarios (
     Rol NVARCHAR(30) NOT NULL DEFAULT 'Empleado',
     Activo BIT NOT NULL DEFAULT 1
 );
+GO
+
+-- Actualización de bases anteriores: columna LiberadaEn. Se marca como "liberada ahora"
+-- para que los pedidos viejos ya entregados no dejen todas las mesas ocupadas.
+IF COL_LENGTH('dbo.Mesas', 'LiberadaEn') IS NULL
+BEGIN
+    ALTER TABLE dbo.Mesas ADD LiberadaEn DATETIME NULL;
+    EXEC(N'UPDATE dbo.Mesas SET LiberadaEn = GETDATE();');
+END
 GO
 
 -- Actualización de bases creadas con una versión anterior del script (sin tamaños).

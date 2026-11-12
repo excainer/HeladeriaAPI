@@ -6,6 +6,15 @@
     }
   </div>
 
+  <p class="ayuda">Una mesa queda ocupada desde su primer pedido. Cuando todo esté entregado y el cliente se vaya, presiona <strong>Liberar mesa</strong>.</p>
+
+  @if (aviso()) {
+    <p class="mensaje-exito" role="status">{{ aviso() }}</p>
+  }
+  @if (errorLiberar()) {
+    <p class="mensaje-error" role="alert">{{ errorLiberar() }}</p>
+  }
+
   @if (error() && mesas().length) {
     <p class="aviso" role="alert">No se pudo actualizar. Se intentará de nuevo en unos segundos.</p>
   }
@@ -25,6 +34,12 @@
           <span class="mesa__estado">{{ m.estado }}</span>
           @if (detalle(m)) {
             <span class="mesa__detalle">{{ detalle(m) }}</span>
+          }
+          @if (m.puedeLiberarse) {
+            <button type="button" class="boton boton--secundario boton--chico liberar"
+                    [disabled]="liberando() !== null" [attr.aria-label]="'Liberar mesa ' + m.numero" (click)="liberar(m)">
+              {{ liberando() === m.mesaId ? 'Liberando…' : 'Liberar mesa' }}
+            </button>
           }
         </li>
       } @empty {

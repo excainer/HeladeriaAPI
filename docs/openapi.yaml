@@ -221,6 +221,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  '/api/Mesas/{id}/liberar':
+    post:
+      tags:
+        - Mesas
+      summary: "Libera una mesa (por ejemplo, cuando el cliente paga y se va): vuelve a quedar Disponible\r\nhasta el siguiente pedido. No se puede liberar si tiene pedidos sin entregar."
+      parameters:
+        - name: id
+          in: path
+          description: Identificador de la mesa.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Mesa liberada; devuelve su estado actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mesa'
+        '401':
+          description: No hay sesión del personal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe una mesa con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: La mesa tiene pedidos sin entregar.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /api/Mesas:
     get:
       tags:
@@ -1081,6 +1119,19 @@ components:
         estado:
           type: string
           nullable: true
+        liberadaEn:
+          type: string
+          format: date-time
+          nullable: true
+        pedidosActivos:
+          type: integer
+          format: int32
+        pedidosDesdeLiberacion:
+          type: integer
+          format: int32
+        puedeLiberarse:
+          type: boolean
+          readOnly: true
       additionalProperties: false
     Pedido:
       type: object
