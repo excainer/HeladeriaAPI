@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using HeladeriaAPI.Models;
 using HeladeriaAPI.Query.Interfaces;
 using HeladeriaAPI.Repository.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HeladeriaAPI.Controllers
@@ -41,6 +42,7 @@ namespace HeladeriaAPI.Controllers
         /// Obtiene la lista de todos los pedidos.
         /// </summary>
         /// <response code="200">Devuelve la lista de pedidos.</response>
+        [Authorize]
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<Pedido>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ObtenerTodos()
@@ -69,6 +71,7 @@ namespace HeladeriaAPI.Controllers
         /// </summary>
         /// <param name="estado">Estado del pedido (Pendiente, En Preparacion, Listo, Entregado).</param>
         /// <response code="200">Devuelve los pedidos con ese estado.</response>
+        [Authorize]
         [HttpGet("estado/{estado}")]
         [ProducesResponseType(typeof(IEnumerable<Pedido>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ObtenerPorEstado(string estado)
@@ -81,6 +84,7 @@ namespace HeladeriaAPI.Controllers
         /// </summary>
         /// <param name="mesaId">Identificador de la mesa.</param>
         /// <response code="200">Devuelve los pedidos de la mesa.</response>
+        [Authorize]
         [HttpGet("mesa/{mesaId:int}")]
         [ProducesResponseType(typeof(IEnumerable<Pedido>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ObtenerPorMesa(int mesaId)
@@ -184,6 +188,7 @@ namespace HeladeriaAPI.Controllers
         /// <response code="400">El estado no es válido.</response>
         /// <response code="404">No existe un pedido con ese id.</response>
         /// <response code="409">El cambio no respeta el orden del flujo (por ejemplo, retroceder o saltar un paso).</response>
+        [Authorize]
         [HttpPut("{id:int}/estado")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

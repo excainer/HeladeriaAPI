@@ -9,6 +9,9 @@
 }
 
 .marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
   font-family: var(--fuente-titulo);
   font-size: var(--texto-grande);
   font-weight: 600;
@@ -35,6 +38,10 @@ a {
   text-decoration: none;
 }
 
+.logo {
+  border-radius: 22%;
+}
+
 a.activo {
   background: var(--tinta);
   color: var(--blanco);
@@ -44,4 +51,43 @@ a.activo {
   max-width: 80rem;
   margin: 0 auto;
   padding: var(--espacio-5);
+}
+
+.superior {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  width: 100%;
+}
+
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.cuenta {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  border-color: transparent;
+  line-height: 1.1;
+}
+
+.cuenta__rol {
+  font-size: var(--texto-pequeno);
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.salir {
+  min-height: var(--alto-tactil);
+  padding: 0 var(--espacio-4);
+  border: 2px solid var(--tinta);
+  border-radius: var(--radio-pildora);
+  background: var(--blanco);
+  font-weight: 700;
 }

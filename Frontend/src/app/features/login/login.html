@@ -1,0 +1,26 @@
+<main class="login">
+  <form class="tarjeta" (submit)="$event.preventDefault(); entrar()" aria-labelledby="titulo-login">
+    <img class="logo" src="logo.png" alt="" width="96" height="96" />
+    <h1 id="titulo-login">Ingreso del personal</h1>
+    <p class="lema">HeladApp · cocina y administración</p>
+
+    <label class="campo">
+      Usuario
+      <input #campoUsuario type="text" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false"
+             maxlength="50" required [value]="usuario()" (input)="usuario.set(campoUsuario.value)" />
+    </label>
+    <label class="campo">
+      Contraseña
+      <input #campoClave type="password" name="clave" autocomplete="current-password"
+             maxlength="200" required [value]="clave()" (input)="clave.set(campoClave.value)" />
+    </label>
+
+    @if (error()) {
+      <p class="mensaje-error" role="alert">{{ error() }}</p>
+    }
+
+    <button type="submit" class="boton" [disabled]="entrando()">{{ entrando() ? 'Entrando…' : 'Entrar' }}</button>
+
+    <a class="cliente" routerLink="/">¿Eres cliente? Haz tu pedido sin registrarte</a>
+  </form>
+</main>

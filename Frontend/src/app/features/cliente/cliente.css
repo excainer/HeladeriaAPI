@@ -18,6 +18,13 @@
   font-size: var(--texto-grande);
   color: var(--tinta);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.logo {
+  border-radius: 22%;
 }
 
 .mesa {

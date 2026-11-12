@@ -57,4 +57,16 @@ describe('errorInterceptor', () => {
     expect((recibido as ApiError).status).toBe(404);
     http.verify();
   });
+  it('usa los mensajes de validación en español de la API', () => {
+    const e = traducirError(new HttpErrorResponse({ status: 400, error: { errors: {
+      Clave: ['La contraseña debe tener al menos 8 caracteres.'],
+      Rol: ['The Rol field is required.'],
+    } } }));
+    expect(e.message).toBe('La contraseña debe tener al menos 8 caracteres.');
+  });
+
+  it('traduce 403 y 429', () => {
+    expect(traducirError(new HttpErrorResponse({ status: 403 })).message).toContain('permiso');
+    expect(traducirError(new HttpErrorResponse({ status: 429 })).message).toContain('Demasiados intentos');
+  });
 });

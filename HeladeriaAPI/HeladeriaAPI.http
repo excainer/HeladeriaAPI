@@ -38,7 +38,21 @@ Accept: application/json
 
 ###
 
-# Administración del catálogo
+# Inicia sesión como administrador (la cookie queda guardada para las siguientes peticiones).
+# Usuario inicial del script; cambia la contraseña después.
+POST {{HeladeriaAPI_HostAddress}}/api/Auth/login
+Content-Type: application/json
+
+{ "nombreUsuario": "admin", "clave": "HeladApp2026" }
+
+###
+
+GET {{HeladeriaAPI_HostAddress}}/api/Auth/yo
+Accept: application/json
+
+###
+
+# Administración del catálogo (solo administradores)
 POST {{HeladeriaAPI_HostAddress}}/api/Categorias
 Content-Type: application/json
 
@@ -60,6 +74,7 @@ Content-Type: application/json
 
 ###
 
+# Lista de pedidos: requiere sesión del personal (ejecuta antes el login de más abajo).
 GET {{HeladeriaAPI_HostAddress}}/api/Pedidos
 Accept: application/json
 

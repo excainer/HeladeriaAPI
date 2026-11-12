@@ -1,8 +1,20 @@
 <header class="cabecera">
-  <span class="marca">HeladApp · Personal</span>
+  <div class="superior">
+    <span class="marca"><img class="logo" src="icono-192.png" alt="" width="36" height="36" />HeladApp · Personal</span>
+    @if (auth.usuario(); as u) {
+      <div class="sesion">
+        <a class="cuenta" routerLink="/personal/cuenta" routerLinkActive="activo" ariaCurrentWhenActive="page"
+           [attr.aria-label]="'Mi cuenta: ' + u.nombre + ', ' + u.rol">
+          <span class="cuenta__nombre">{{ u.nombre }}</span>
+          <span class="cuenta__rol">{{ u.rol }}</span>
+        </a>
+        <button type="button" class="salir" [disabled]="saliendo()" (click)="salir()">Salir</button>
+      </div>
+    }
+  </div>
   <nav aria-label="Secciones del personal">
     <ul>
-      @for (e of enlaces; track e.ruta) {
+      @for (e of enlaces(); track e.ruta) {
         <li><a [routerLink]="['/personal', e.ruta]" routerLinkActive="activo" ariaCurrentWhenActive="page">{{ e.texto }}</a></li>
       }
     </ul>

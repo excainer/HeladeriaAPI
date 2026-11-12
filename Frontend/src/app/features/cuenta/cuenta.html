@@ -1,0 +1,39 @@
+<section class="cuenta">
+  <h1>Mi cuenta</h1>
+
+  @if (auth.usuario(); as u) {
+    <dl class="datos">
+      <div><dt>Nombre</dt><dd>{{ u.nombre }}</dd></div>
+      <div><dt>Usuario</dt><dd>{{ u.nombreUsuario }}</dd></div>
+      <div><dt>Rol</dt><dd>{{ u.rol }}</dd></div>
+    </dl>
+  }
+
+  <form class="formulario" (submit)="$event.preventDefault(); cambiar()" aria-labelledby="titulo-clave">
+    <h2 id="titulo-clave">Cambiar contraseña</h2>
+    <div class="campos">
+      <label class="campo">
+        Contraseña actual
+        <input #campoActual type="password" autocomplete="current-password" maxlength="200" [value]="actual()" (input)="actual.set(campoActual.value)" />
+      </label>
+      <label class="campo">
+        Contraseña nueva
+        <input #campoNueva type="password" autocomplete="new-password" minlength="8" maxlength="200" [value]="nueva()" (input)="nueva.set(campoNueva.value)" />
+      </label>
+      <label class="campo">
+        Repite la contraseña nueva
+        <input #campoConfirmacion type="password" autocomplete="new-password" maxlength="200" [value]="confirmacion()" (input)="confirmacion.set(campoConfirmacion.value)" />
+      </label>
+    </div>
+    <p class="ayuda">Mínimo 8 caracteres.</p>
+    @if (error()) {
+      <p class="mensaje-error" role="alert">{{ error() }}</p>
+    }
+    @if (aviso()) {
+      <p class="mensaje-exito" role="status">{{ aviso() }}</p>
+    }
+    <div class="acciones">
+      <button type="submit" class="boton" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Cambiar contraseña' }}</button>
+    </div>
+  </form>
+</section>

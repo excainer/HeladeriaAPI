@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using HeladeriaAPI.Models;
 using HeladeriaAPI.Query.Interfaces;
 using HeladeriaAPI.Repository.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HeladeriaAPI.Controllers
@@ -65,6 +66,7 @@ namespace HeladeriaAPI.Controllers
         /// <response code="201">Tamaño creado.</response>
         /// <response code="400">Los datos no son válidos o la categoría no existe.</response>
         /// <response code="409">Ya existe un tamaño con ese nombre en la categoría.</response>
+        [Authorize(Roles = Seguridad.SoloAdministrador)]
         [HttpPost]
         [ProducesResponseType(typeof(Tamano), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -96,6 +98,7 @@ namespace HeladeriaAPI.Controllers
         /// <response code="400">Los datos no son válidos o la categoría no existe.</response>
         /// <response code="404">No existe un tamaño con ese id.</response>
         /// <response code="409">Ya existe otro tamaño con ese nombre en la categoría.</response>
+        [Authorize(Roles = Seguridad.SoloAdministrador)]
         [HttpPut("{id:int}")]
         [ProducesResponseType(typeof(Tamano), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

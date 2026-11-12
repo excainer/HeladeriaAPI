@@ -19,6 +19,15 @@ const ESTADOS = ['Pendiente', 'En Preparacion', 'Listo', 'Entregado'];
 const pedidos = [{ pedidoId: 1, mesaId: 1, fecha: new Date().toISOString(), estado: 'Pendiente', total: 7000 }];
 const detalles = [{ detallePedidoId: 1, pedidoId: 1, productoId: 1, tamanoId: 2, cantidad: 1, sabores: 'Vainilla', toppings: 'Chispas de chocolate', observaciones: 'Sin crema', precioUnitario: 7000 }];
 
+// Personal (solo en memoria y con claves en texto plano: es una API falsa de desarrollo).
+const usuarios = [
+  { usuarioId: 1, nombreUsuario: 'admin', nombre: 'Administrador', rol: 'Administrador', activo: true, clave: 'HeladApp2026' },
+  { usuarioId: 2, nombreUsuario: 'cocina', nombre: 'Cocina', rol: 'Empleado', activo: true, clave: 'cocina2026' },
+];
+const sesiones = new Map(); // token de la cookie → usuarioId
+const ROLES = ['Administrador', 'Empleado'];
+const publico = ({ clave, ...u }) => u;
+
 const enviar = (res, status, cuerpo) => {
   if (cuerpo === undefined) { res.writeHead(status); return res.end(); }
   // Igual que la API real: los mensajes de error van como texto JSON ("...").
@@ -61,6 +70,75 @@ createServer((req, res) => {
   req.on('end', () => {
     let datos = {};
     if (cuerpo) { try { datos = JSON.parse(cuerpo); } catch { return enviar(res, 400, 'JSON no válido.'); } }
+
+    // --- Sesión del personal (cookie HttpOnly, como la API real)
+    const token = /(?:^|;\s*)HeladApp\.Sesion=([^;]+)/.exec(req.headers.cookie ?? '')?.[1];
+    const yo = usuarios.find((u) => u.usuarioId === sesiones.get(token) && u.activo) ?? null;
+    const esAdmin = yo?.rol === 'Administrador';
+    const sinSesion = () => enviar(res, 401);
+    const sinPermiso = () => enviar(res, 403);
+
+    if (recurso === 'auth') {
+      const accion = a?.toLowerCase();
+      if (accion === 'login' && req.method === 'POST') {
+        const u = usuarios.find((x) => x.nombreUsuario.toLowerCase() === String(datos.nombreUsuario ?? '').trim().toLowerCase());
+        if (!u || !u.activo || u.clave !== datos.clave) return enviar(res, 401, 'Usuario o contraseña incorrectos.');
+        const nuevo = crypto.randomUUID();
+        sesiones.set(nuevo, u.usuarioId);
+        res.setHeader('Set-Cookie', `HeladApp.Sesion=${nuevo}; Path=/; HttpOnly; SameSite=Strict`);
+        return enviar(res, 200, publico(u));
+      }
+      if (accion === 'logout' && req.method === 'POST') {
+        sesiones.delete(token);
+        res.setHeader('Set-Cookie', 'HeladApp.Sesion=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
+        return enviar(res, 204);
+      }
+      if (accion === 'yo' && req.method === 'GET') return yo ? enviar(res, 200, publico(yo)) : sinSesion();
+      if (accion === 'clave' && req.method === 'PUT') {
+        if (!yo) return sinSesion();
+        if (yo.clave !== datos.claveActual) return enviar(res, 400, 'La contraseña actual no es correcta.');
+        if (String(datos.claveNueva ?? '').length < 8) return enviar(res, 400, 'La contraseña debe tener al menos 8 caracteres.');
+        yo.clave = datos.claveNueva;
+        return enviar(res, 204);
+      }
+    }
+
+    if (recurso === 'usuarios') {
+      if (!yo) return sinSesion();
+      if (!esAdmin) return sinPermiso();
+      const rol = ROLES.find((r) => r.toLowerCase() === String(datos.rol ?? '').toLowerCase());
+      if (req.method === 'GET' && !a) return enviar(res, 200, usuarios.map(publico));
+      if (req.method === 'POST' && !a) {
+        const nombreUsuario = String(datos.nombreUsuario ?? '').trim();
+        if (!/^[A-Za-z0-9._-]{3,50}$/.test(nombreUsuario)) return enviar(res, 400, 'El usuario debe tener de 3 a 50 letras, números, punto, guion o guion bajo, sin espacios.');
+        if (!texto(datos.nombre, 100)) return enviar(res, 400, 'El nombre no puede estar vacío.');
+        if (String(datos.clave ?? '').length < 8) return enviar(res, 400, 'La contraseña debe tener al menos 8 caracteres.');
+        if (!rol) return enviar(res, 400, `Rol no válido. Valores permitidos: ${ROLES.join(', ')}.`);
+        if (usuarios.some((u) => mismoNombre(u.nombreUsuario, nombreUsuario))) return enviar(res, 409, `Ya existe el usuario "${nombreUsuario}".`);
+        const u = { usuarioId: siguienteId(usuarios, 'usuarioId'), nombreUsuario, nombre: datos.nombre.trim(), rol, activo: true, clave: datos.clave };
+        usuarios.push(u);
+        return enviar(res, 201, publico(u));
+      }
+      if (req.method === 'PUT' && a) {
+        const u = usuarios.find((x) => x.usuarioId === Number(a));
+        if (!u) return enviar(res, 404);
+        if (!rol) return enviar(res, 400, `Rol no válido. Valores permitidos: ${ROLES.join(', ')}.`);
+        if (u.usuarioId === yo.usuarioId && (datos.activo === false || rol !== 'Administrador')) {
+          return enviar(res, 400, 'No puedes quitarte el rol de administrador ni desactivar tu propia cuenta.');
+        }
+        if (datos.claveNueva && datos.claveNueva.length < 8) return enviar(res, 400, 'La contraseña debe tener al menos 8 caracteres.');
+        Object.assign(u, { nombre: texto(datos.nombre, 100) ?? u.nombre, rol, activo: datos.activo !== false });
+        if (datos.claveNueva) u.clave = datos.claveNueva;
+        return enviar(res, 200, publico(u));
+      }
+    }
+
+    // Igual que la API real: el personal necesita sesión y el catálogo solo lo edita un administrador.
+    const listaDePedidos = recurso === 'pedidos' && req.method === 'GET' && (!a || a === 'estado' || a === 'mesa');
+    const cambioDeEstado = recurso === 'pedidos' && req.method === 'PUT';
+    const edicionCatalogo = ['categorias', 'productos', 'tamanos'].includes(recurso) && ['POST', 'PUT'].includes(req.method);
+    if ((listaDePedidos || cambioDeEstado || edicionCatalogo) && !yo) return sinSesion();
+    if (edicionCatalogo && !esAdmin) return sinPermiso();
 
     if (req.method === 'GET') {
       if (recurso === 'categorias') return a ? lectura(categorias, a, 'categoriaId') : enviar(res, 200, categorias);

@@ -1,0 +1,85 @@
+<section class="lectura">
+  <div class="encabezado">
+    <h1>Usuarios del personal</h1>
+    @if (!cargando() && !error() && editando() === null) {
+      <button type="button" class="boton" (click)="nuevo()">Nuevo usuario</button>
+    }
+  </div>
+  <p class="ayuda">
+    Los <strong>empleados</strong> atienden cocina y pedidos. Los <strong>administradores</strong> además editan el catálogo y los usuarios.
+    Los clientes no necesitan usuario.
+  </p>
+
+  @if (aviso()) {
+    <p class="mensaje-exito" role="status">{{ aviso() }}</p>
+  }
+
+  @if (editando() !== null) {
+    <form class="formulario" (submit)="$event.preventDefault(); guardar()" aria-labelledby="titulo-formulario">
+      <h2 id="titulo-formulario">{{ editando() === 0 ? 'Nuevo usuario' : 'Editar usuario' }}</h2>
+      <div class="campos">
+        <label class="campo">
+          Usuario
+          <input #campoUsuario type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="50"
+                 [value]="nombreUsuario()" [disabled]="editando() !== 0" (input)="nombreUsuario.set(campoUsuario.value)" />
+        </label>
+        <label class="campo">
+          Nombre
+          <input #campoNombre type="text" maxlength="100" [value]="nombre()" (input)="nombre.set(campoNombre.value)" />
+        </label>
+        <label class="campo">
+          Rol
+          <select #campoRol (change)="rol.set($any(campoRol.value))">
+            @for (r of roles; track r) {
+              <option [value]="r" [selected]="r === rol()">{{ r }}</option>
+            }
+          </select>
+        </label>
+        <label class="campo">
+          {{ editando() === 0 ? 'Contraseña inicial' : 'Nueva contraseña (opcional)' }}
+          <input #campoClave type="password" autocomplete="new-password" maxlength="200" [value]="clave()" (input)="clave.set(campoClave.value)" />
+        </label>
+      </div>
+      @if (editando() !== 0) {
+        <label class="casilla">
+          <input #campoActivo type="checkbox" [checked]="activo()" (change)="activo.set(campoActivo.checked)" />
+          Puede iniciar sesión
+        </label>
+      }
+      @if (errorFormulario()) {
+        <p class="mensaje-error" role="alert">{{ errorFormulario() }}</p>
+      }
+      <div class="acciones">
+        <button type="submit" class="boton" [disabled]="guardando()">{{ guardando() ? 'Guardando…' : 'Guardar' }}</button>
+        <button type="button" class="boton boton--secundario" (click)="cancelar()">Cancelar</button>
+      </div>
+    </form>
+  }
+
+  @if (cargando()) {
+    <p role="status">Cargando usuarios…</p>
+  } @else if (error()) {
+    <div class="aviso" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="tabla">
+      <table>
+        <caption class="solo-lectores">Usuarios del personal</caption>
+        <thead><tr><th scope="col">Nombre</th><th scope="col">Usuario</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col"><span class="solo-lectores">Acciones</span></th></tr></thead>
+        <tbody>
+          @for (u of usuarios(); track u.usuarioId) {
+            <tr [class.inactivo]="!u.activo">
+              <th scope="row">{{ u.nombre }}@if (esYo(u)) {<span class="yo"> (tú)</span>}</th>
+              <td>{{ u.nombreUsuario }}</td>
+              <td>{{ u.rol }}</td>
+              <td>{{ u.activo ? 'Activo' : 'Inactivo' }}</td>
+              <td><button type="button" class="boton boton--secundario boton--chico" [attr.aria-label]="'Editar ' + u.nombreUsuario" (click)="editar(u)">Editar</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

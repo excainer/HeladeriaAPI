@@ -3,6 +3,100 @@ info:
   title: HeladeriaAPI
   version: '1.0'
 paths:
+  /api/Auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Inicia sesión con usuario y contraseña. Máximo 10 intentos por minuto.
+      requestBody:
+        description: Usuario y contraseña.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Sesión iniciada; devuelve los datos del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioSesion'
+        '401':
+          description: 'Usuario o contraseña incorrectos, o usuario inactivo.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '429':
+          description: Demasiados intentos; espera un minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/Auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Cierra la sesión actual.
+      responses:
+        '204':
+          description: Sesión cerrada.
+  /api/Auth/yo:
+    get:
+      tags:
+        - Auth
+      summary: Devuelve el usuario con sesión iniciada.
+      responses:
+        '200':
+          description: Datos del usuario actual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioSesion'
+        '401':
+          description: No hay sesión iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /api/Auth/clave:
+    put:
+      tags:
+        - Auth
+      summary: Cambia la contraseña del usuario actual.
+      requestBody:
+        description: Contraseña actual y nueva (mínimo 8 caracteres).
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambiarClaveRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CambiarClaveRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CambiarClaveRequest'
+      responses:
+        '204':
+          description: Contraseña cambiada.
+        '400':
+          description: La contraseña actual no es correcta o la nueva no es válida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: No hay sesión iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /api/Categorias:
     get:
       tags:
@@ -663,6 +757,99 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  /api/Usuarios:
+    get:
+      tags:
+        - Usuarios
+      summary: Lista los usuarios del personal (sin contraseñas).
+      responses:
+        '200':
+          description: Devuelve la lista de usuarios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsuarioSesion'
+    post:
+      tags:
+        - Usuarios
+      summary: Crea un usuario del personal.
+      requestBody:
+        description: 'Usuario, nombre, contraseña inicial y rol.'
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearUsuarioRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/CrearUsuarioRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/CrearUsuarioRequest'
+      responses:
+        '201':
+          description: Usuario creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioSesion'
+        '400':
+          description: Los datos no son válidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: El nombre de usuario ya existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  '/api/Usuarios/{id}':
+    put:
+      tags:
+        - Usuarios
+      summary: "Edita nombre, rol o estado de un usuario y, opcionalmente, le asigna una contraseña nueva.\r\nUn administrador no puede quitarse su propio rol ni desactivarse (para no quedar sin acceso)."
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del usuario.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Datos nuevos.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarUsuarioRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarUsuarioRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/ActualizarUsuarioRequest'
+      responses:
+        '200':
+          description: Devuelve el usuario actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioSesion'
+        '400':
+          description: Los datos no son válidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe un usuario con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
 components:
   schemas:
     ActualizarEstadoRequest:
@@ -676,6 +863,51 @@ components:
           description: Nuevo estado del pedido.
       additionalProperties: false
       description: Datos para cambiar el estado de un pedido.
+    ActualizarUsuarioRequest:
+      required:
+        - nombre
+        - rol
+      type: object
+      properties:
+        nombre:
+          maxLength: 100
+          minLength: 1
+          pattern: .*\S.*
+          type: string
+          description: Nombre visible del trabajador.
+        rol:
+          minLength: 1
+          type: string
+          description: '"Administrador" o "Empleado".'
+        activo:
+          type: boolean
+          description: Si puede iniciar sesión.
+        claveNueva:
+          maxLength: 200
+          minLength: 8
+          type: string
+          description: 'Si se envía, reemplaza la contraseña (mínimo 8 caracteres). Vacío = no cambia.'
+          nullable: true
+      additionalProperties: false
+      description: Datos para editar un usuario del personal.
+    CambiarClaveRequest:
+      required:
+        - claveActual
+        - claveNueva
+      type: object
+      properties:
+        claveActual:
+          maxLength: 200
+          minLength: 1
+          type: string
+          description: Contraseña actual.
+        claveNueva:
+          maxLength: 200
+          minLength: 8
+          type: string
+          description: Contraseña nueva (mínimo 8 caracteres).
+      additionalProperties: false
+      description: Datos para cambiar la contraseña propia.
     Categoria:
       type: object
       properties:
@@ -718,6 +950,36 @@ components:
           description: Ítems del pedido (mínimo uno).
       additionalProperties: false
       description: Datos para crear un pedido.
+    CrearUsuarioRequest:
+      required:
+        - clave
+        - nombre
+        - nombreUsuario
+        - rol
+      type: object
+      properties:
+        nombreUsuario:
+          minLength: 1
+          pattern: '^\s*[A-Za-z0-9._-]{3,50}\s*$'
+          type: string
+          description: 'Nombre para iniciar sesión: 3 a 50 letras, números, punto, guion o guion bajo.'
+        nombre:
+          maxLength: 100
+          minLength: 1
+          pattern: .*\S.*
+          type: string
+          description: Nombre visible del trabajador.
+        clave:
+          maxLength: 200
+          minLength: 8
+          type: string
+          description: Contraseña inicial (mínimo 8 caracteres).
+        rol:
+          minLength: 1
+          type: string
+          description: '"Administrador" o "Empleado".'
+      additionalProperties: false
+      description: Datos para crear un usuario del personal.
     DetallePedido:
       type: object
       properties:
@@ -789,6 +1051,24 @@ components:
           nullable: true
       additionalProperties: false
       description: Ítem de un pedido.
+    LoginRequest:
+      required:
+        - clave
+        - nombreUsuario
+      type: object
+      properties:
+        nombreUsuario:
+          maxLength: 50
+          minLength: 1
+          type: string
+          description: Nombre de usuario.
+        clave:
+          maxLength: 200
+          minLength: 1
+          type: string
+          description: Contraseña.
+      additionalProperties: false
+      description: Datos para iniciar sesión.
     Mesa:
       type: object
       properties:
@@ -967,9 +1247,35 @@ components:
           description: 'Si el tamaño se puede elegir. Por defecto, sí.'
       additionalProperties: false
       description: Datos para crear o editar un tamaño.
+    UsuarioSesion:
+      type: object
+      properties:
+        usuarioId:
+          type: integer
+          description: Identificador del usuario.
+          format: int32
+        nombreUsuario:
+          type: string
+          description: Nombre con el que inicia sesión.
+          nullable: true
+        nombre:
+          type: string
+          description: Nombre visible.
+          nullable: true
+        rol:
+          type: string
+          description: '"Administrador" o "Empleado".'
+          nullable: true
+        activo:
+          type: boolean
+          description: Indica si puede iniciar sesión.
+      additionalProperties: false
+      description: Datos públicos del usuario con sesión (nunca incluye la contraseña).
 tags:
+  - name: Auth
   - name: Categorias
   - name: Mesas
   - name: Pedidos
   - name: Productos
   - name: Tamanos
+  - name: Usuarios

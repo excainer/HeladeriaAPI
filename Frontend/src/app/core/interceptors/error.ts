@@ -27,8 +27,23 @@ export function traducirError(error: unknown): ApiError {
     );
   }
 
-  // El backend responde con texto en español en sus 400 y 404 explícitos.
-  const detalle = typeof error.error === 'string' && error.error.trim() ? error.error : null;
+  // El backend responde con texto en español en sus errores explícitos, y con un objeto
+  // { errors: { campo: [mensajes] } } cuando falla la validación automática de los datos.
+  const detalle = typeof error.error === 'string' && error.error.trim()
+    ? error.error
+    : mensajesDeValidacion(error.error);
+
+  if (status === 429) {
+    return new ApiError('Demasiados intentos. Espera un minuto e inténtalo de nuevo.', status);
+  }
+
+  if (status === 403) {
+    return new ApiError('Tu usuario no tiene permiso para hacer esto.', status);
+  }
+
+  if (status === 401) {
+    return new ApiError(detalle ?? 'Tu sesión terminó. Inicia sesión de nuevo.', status);
+  }
 
   if (status === 400) {
     return new ApiError(
@@ -42,4 +57,14 @@ export function traducirError(error: unknown): ApiError {
   }
 
   return new ApiError(detalle ?? 'Ocurrió un error inesperado. Inténtalo de nuevo.', status);
+}
+
+/** Une los mensajes de validación en español de la API; ignora los genéricos en inglés. */
+function mensajesDeValidacion(cuerpo: unknown): string | null {
+  const errores = (cuerpo as { errors?: Record<string, string[]> } | null)?.errors;
+  if (!errores || typeof errores !== 'object') return null;
+  const mensajes = Object.values(errores)
+    .flat()
+    .filter((m) => typeof m === 'string' && !/^The |field|required/i.test(m));
+  return mensajes.length ? [...new Set(mensajes)].join(' ') : null;
 }

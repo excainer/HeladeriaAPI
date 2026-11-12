@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Mesa } from '../../core/models/mesa.model';
 import { MesaService } from '../../core/services/mesa';
 import { MesaSesionService } from '../../core/services/mesa-sesion';
@@ -11,7 +11,7 @@ import { mensajeError } from '../../core/utils/errores';
  */
 @Component({
   selector: 'app-inicio',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './inicio.html',
   styleUrl: './inicio.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

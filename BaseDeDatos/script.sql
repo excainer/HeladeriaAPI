@@ -67,6 +67,18 @@ CREATE TABLE dbo.DetallesPedido (
 );
 GO
 
+-- Usuarios del personal (los clientes no tienen usuario). ClaveHash usa el formato de ASP.NET Identity.
+IF OBJECT_ID('dbo.Usuarios') IS NULL
+CREATE TABLE dbo.Usuarios (
+    UsuarioId INT IDENTITY(1,1) PRIMARY KEY,
+    NombreUsuario NVARCHAR(50) NOT NULL CONSTRAINT UQ_Usuarios_NombreUsuario UNIQUE,
+    Nombre NVARCHAR(100) NOT NULL,
+    ClaveHash NVARCHAR(500) NOT NULL,
+    Rol NVARCHAR(30) NOT NULL DEFAULT 'Empleado',
+    Activo BIT NOT NULL DEFAULT 1
+);
+GO
+
 -- Actualización de bases creadas con una versión anterior del script (sin tamaños).
 IF COL_LENGTH('dbo.DetallesPedido', 'TamanoId') IS NULL
     ALTER TABLE dbo.DetallesPedido
@@ -109,4 +121,12 @@ IF NOT EXISTS (SELECT 1 FROM dbo.Tamanos)
         (N'Bebidas', N'Grande',                    2500, 2)
     ) AS t (Categoria, Nombre, PrecioAdicional, Orden)
     JOIN dbo.Categorias c ON c.Nombre = t.Categoria;
+
+-- Administrador inicial: usuario "admin", contraseña "HeladApp2026".
+-- CÁMBIALA en "Mi cuenta" la primera vez que entres (solo se crea si no hay ningún usuario).
+IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios)
+    INSERT INTO dbo.Usuarios (NombreUsuario, Nombre, ClaveHash, Rol, Activo)
+    VALUES (N'admin', N'Administrador',
+            N'AQAAAAIAAYagAAAAEPOWvPtfnmA0RfvTPpxuz77lrY+f17UtrZfnCZrxsVm7nwM2s0HkNQUIHnMs6DULeA==',
+            N'Administrador', 1);
 GO

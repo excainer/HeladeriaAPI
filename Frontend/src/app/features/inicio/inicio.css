@@ -11,6 +11,13 @@
   text-align: center;
 }
 
+.portada__logo {
+  display: block;
+  margin: 0 auto var(--espacio-3);
+  border-radius: 22%;
+  box-shadow: 0 6px 18px rgb(59 34 48 / 0.12);
+}
+
 .portada h1 {
   font-size: 2.5rem;
 }
@@ -69,4 +76,12 @@
   font-family: var(--fuente-titulo);
   font-size: var(--titulo-1);
   line-height: 1;
+}
+
+.acceso-personal {
+  align-self: center;
+  margin-top: var(--espacio-5);
+  color: var(--tinta);
+  font-size: var(--texto-pequeno);
+  opacity: 0.8;
 }

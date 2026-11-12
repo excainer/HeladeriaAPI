@@ -16,7 +16,9 @@ Proyecto final del curso **Construcción de Software**, orientado por el profeso
 - **Alejandro Ortega**
 - **Juan Gallo**
 
-El repositorio original del equipo es [avelezfi/HeladeriaAPI](https://github.com/avelezfi/HeladeriaAPI). Esta copia continúa el proyecto con mejoras posteriores a la entrega (tamaños, administración del catálogo y más pruebas); el historial de commits conserva el trabajo de cada integrante.
+El logo es una [ilustración de Cansu Sarp en Unsplash](https://unsplash.com/photos/rj4qZOnLpnw) (licencia de Unsplash, uso libre).
+
+El repositorio original del equipo es [avelezfi/HeladeriaAPI](https://github.com/avelezfi/HeladeriaAPI). Esta copia continúa el proyecto con mejoras posteriores a la entrega (tamaños, administración del catálogo, login del personal y más pruebas); el historial de commits conserva el trabajo de cada integrante.
 
 ## Estructura
 
@@ -116,24 +118,49 @@ El puerto `1433` es el predeterminado de SQL Server. Cámbialo si tu instancia u
 dotnet run --project HeladeriaAPI\HeladeriaAPI.csproj --launch-profile http
 ```
 
-Abre `http://localhost:5152/swagger`. El archivo `HeladeriaAPI/HeladeriaAPI.http` trae ejemplos listos para probar desde Visual Studio o VS Code, y la especificación completa está en [`docs/openapi.yaml`](docs/openapi.yaml).
+Abre `http://localhost:5152/swagger`. Para probar los endpoints del personal desde Swagger, ejecuta primero `POST /api/Auth/login`: la cookie de sesión queda guardada en el navegador. El archivo `HeladeriaAPI/HeladeriaAPI.http` trae ejemplos listos para probar desde Visual Studio o VS Code, y la especificación completa está en [`docs/openapi.yaml`](docs/openapi.yaml).
+
+## Acceso del personal
+
+Los **clientes no inician sesión**: eligen su mesa, piden y siguen su pedido sin registrarse, porque la mayoría no vuelve con frecuencia. Solo los **trabajadores** entran con usuario y contraseña en `/personal`.
+
+| Rol | Puede |
+|---|---|
+| **Empleado** | Cocina (avanzar pedidos), historial de pedidos, resumen y mesas |
+| **Administrador** | Todo lo anterior, más editar productos, categorías y tamaños, y gestionar los usuarios |
+
+**Usuario inicial:** `admin` / `HeladApp2026` (lo crea el script si no hay usuarios). **Cámbiale la contraseña en "Mi cuenta" la primera vez que entres** y crea un usuario para cada trabajador en "Usuarios".
+
+Seguridad:
+
+- La sesión viaja en una cookie `HttpOnly` y `SameSite=Strict`: JavaScript no puede leerla y el navegador no la envía desde otros sitios.
+- Las contraseñas se guardan cifradas con PBKDF2 (el mismo formato de ASP.NET Identity); nunca se guardan ni se devuelven en texto.
+- Máximo 10 intentos de inicio de sesión por minuto desde la misma dirección.
+- En cada petición se revisa que el usuario siga activo: desactivar a alguien lo saca de inmediato.
+- La protección está en la API, no solo en las pantallas: sin sesión los endpoints del personal responden `401`, y sin permiso `403`.
 
 ## Endpoints
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/Categorias`, `/api/Categorias/{id}` | Consulta de categorías |
-| POST · PUT | `/api/Categorias`, `/api/Categorias/{id}` | Crear y renombrar categorías |
-| GET | `/api/Productos?categoriaId=`, `/api/Productos/categoria/{categoriaId}` | Lista de productos (filtro opcional por categoría) |
-| GET | `/api/Productos/{id}` | Detalle de un producto **con sus tamaños** |
-| POST · PUT | `/api/Productos`, `/api/Productos/{id}` | Crear y editar productos (precio, categoría, disponibilidad) |
-| GET | `/api/Tamanos?categoriaId=`, `/api/Tamanos/{id}` | Consulta de tamaños |
-| POST · PUT | `/api/Tamanos`, `/api/Tamanos/{id}` | Crear y editar tamaños |
-| GET | `/api/Mesas`, `/api/Mesas/{id}` | Consulta de mesas |
-| GET | `/api/Mesas/numero/{numero}` | Mesa por su número visible (el del código QR) |
-| GET | `/api/Pedidos`, `/api/Pedidos/{id}`, `/api/Pedidos/estado/{estado}`, `/api/Pedidos/mesa/{mesaId}`, `/api/Pedidos/{id}/detalles` | Consulta de pedidos |
-| POST | `/api/Pedidos` | Crea un pedido con sus detalles |
-| PUT | `/api/Pedidos/{id}/estado` | Avanza el estado del pedido |
+🔓 = abierto (clientes) · 🔑 = requiere sesión del personal · 🛡️ = solo administradores
+
+| | Método | Ruta | Descripción |
+|---|---|---|---|
+| 🔓 | POST | `/api/Auth/login`, `/api/Auth/logout` | Iniciar y cerrar sesión |
+| 🔑 | GET · PUT | `/api/Auth/yo`, `/api/Auth/clave` | Usuario actual y cambio de contraseña propia |
+| 🛡️ | GET · POST · PUT | `/api/Usuarios`, `/api/Usuarios/{id}` | Usuarios del personal |
+| 🔓 | GET | `/api/Categorias`, `/api/Categorias/{id}` | Consulta de categorías |
+| 🛡️ | POST · PUT | `/api/Categorias`, `/api/Categorias/{id}` | Crear y renombrar categorías |
+| 🔓 | GET | `/api/Productos?categoriaId=`, `/api/Productos/categoria/{categoriaId}` | Lista de productos (filtro opcional por categoría) |
+| 🔓 | GET | `/api/Productos/{id}` | Detalle de un producto **con sus tamaños** |
+| 🛡️ | POST · PUT | `/api/Productos`, `/api/Productos/{id}` | Crear y editar productos (precio, categoría, disponibilidad) |
+| 🔓 | GET | `/api/Tamanos?categoriaId=`, `/api/Tamanos/{id}` | Consulta de tamaños |
+| 🛡️ | POST · PUT | `/api/Tamanos`, `/api/Tamanos/{id}` | Crear y editar tamaños |
+| 🔓 | GET | `/api/Mesas`, `/api/Mesas/{id}` | Consulta de mesas |
+| 🔓 | GET | `/api/Mesas/numero/{numero}` | Mesa por su número visible (el del código QR) |
+| 🔓 | GET | `/api/Pedidos/{id}`, `/api/Pedidos/{id}/detalles` | El cliente consulta su pedido |
+| 🔑 | GET | `/api/Pedidos`, `/api/Pedidos/estado/{estado}`, `/api/Pedidos/mesa/{mesaId}` | Listas de pedidos para el personal |
+| 🔓 | POST | `/api/Pedidos` | Crea un pedido con sus detalles |
+| 🔑 | PUT | `/api/Pedidos/{id}/estado` | Avanza el estado del pedido |
 
 ### Reglas de negocio
 
@@ -162,7 +189,7 @@ Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que n
 Aplicación Angular en la carpeta `Frontend`. Tiene dos zonas:
 
 - **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), elige tamaño, sabores y toppings, arma el pedido y sigue su estado en tiempo real.
-- **Personal** (`http://localhost:4200/personal`): cocina (avanza los estados), historial de pedidos, resumen y **administración** de productos, categorías y tamaños.
+- **Personal** (`http://localhost:4200/personal`, con login): cocina (avanza los estados), historial de pedidos, resumen y, para administradores, **administración** de productos, categorías, tamaños y usuarios.
 
 Con la API corriendo (paso 3):
 
@@ -174,7 +201,7 @@ npm start
 
 `npm start` redirige las llamadas a `/api` hacia `http://localhost:5152` (archivo `proxy.conf.json`), así que no hace falta configurar CORS.
 
-Para trabajar en el frontend sin base de datos hay una API falsa con los mismos datos y reglas:
+Para trabajar en el frontend sin base de datos hay una API falsa con los mismos datos y reglas (usuarios: `admin` / `HeladApp2026` y `cocina` / `cocina2026`):
 
 ```
 npm run mock        (en una terminal, puerto 5153)

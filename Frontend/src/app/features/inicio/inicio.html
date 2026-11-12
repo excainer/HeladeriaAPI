@@ -1,5 +1,6 @@
 <section class="inicio">
   <div class="portada">
+    <img class="portada__logo" src="logo.png" alt="" width="112" height="112" />
     <h1>HeladApp</h1>
     <p class="lema">Heladería · Pide desde tu mesa, sin filas</p>
   </div>
@@ -29,4 +30,5 @@
   } @else if (!cargando() && !error()) {
     <p class="aviso">Todavía no hay mesas registradas. Avisa al personal.</p>
   }
+  <a class="acceso-personal" routerLink="/personal">Acceso del personal</a>
 </section>

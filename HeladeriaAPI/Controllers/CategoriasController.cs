@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using HeladeriaAPI.Models;
 using HeladeriaAPI.Query.Interfaces;
 using HeladeriaAPI.Repository.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HeladeriaAPI.Controllers
@@ -57,6 +58,7 @@ namespace HeladeriaAPI.Controllers
         /// <response code="201">Categoría creada.</response>
         /// <response code="400">Los datos no son válidos.</response>
         /// <response code="409">Ya existe una categoría con ese nombre.</response>
+        [Authorize(Roles = Seguridad.SoloAdministrador)]
         [HttpPost]
         [ProducesResponseType(typeof(Categoria), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -81,6 +83,7 @@ namespace HeladeriaAPI.Controllers
         /// <response code="400">Los datos no son válidos.</response>
         /// <response code="404">No existe una categoría con ese id.</response>
         /// <response code="409">Ya existe otra categoría con ese nombre.</response>
+        [Authorize(Roles = Seguridad.SoloAdministrador)]
         [HttpPut("{id:int}")]
         [ProducesResponseType(typeof(Categoria), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

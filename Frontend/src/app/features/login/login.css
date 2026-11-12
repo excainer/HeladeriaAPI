@@ -1,0 +1,45 @@
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--espacio-5);
+  background: linear-gradient(160deg, var(--rosa-suave), var(--vainilla-suave) 55%, var(--menta-suave));
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  width: min(24rem, 100%);
+  padding: var(--espacio-6) var(--espacio-5);
+  border-radius: var(--radio-grande);
+  background: var(--blanco);
+  box-shadow: 0 10px 30px rgb(59 34 48 / 0.12);
+}
+
+.logo {
+  align-self: center;
+  border-radius: 22%;
+}
+
+h1 {
+  text-align: center;
+  font-size: var(--titulo-2);
+}
+
+.lema {
+  margin-top: calc(-1 * var(--espacio-3));
+  text-align: center;
+  font-size: var(--texto-pequeno);
+}
+
+.boton {
+  width: 100%;
+}
+
+.cliente {
+  align-self: center;
+  color: var(--tinta);
+  font-size: var(--texto-pequeno);
+  font-weight: 600;
+}

@@ -6,6 +6,7 @@ import localeEsCo from '@angular/common/locales/es-CO';
 
 import { routes } from './app.routes';
 import { errorInterceptor } from './core/interceptors/error';
+import { sesionInterceptor } from './core/interceptors/sesion';
 
 // Formato colombiano para fechas y moneda (ej. $5.500).
 registerLocaleData(localeEsCo);
@@ -14,7 +15,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([errorInterceptor])),
+    provideHttpClient(withInterceptors([sesionInterceptor, errorInterceptor])),
     { provide: LOCALE_ID, useValue: 'es-CO' }
   ]
 };
