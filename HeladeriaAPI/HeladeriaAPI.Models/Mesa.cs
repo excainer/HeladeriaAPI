@@ -21,8 +21,14 @@ namespace HeladeriaAPI.Models
         public int Numero { get; set; }
 
         /// <summary>
-        /// Estado actual de la mesa (ej. Disponible, Ocupada).
+        /// Estado actual de la mesa: "Ocupada" si tiene pedidos sin entregar; si no, el guardado (ej. Disponible).
         /// </summary>
         public string Estado { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Cantidad de pedidos de la mesa que todavía no se han entregado (se calcula, no es una columna).
+        /// </summary>
+        [Computed]
+        public int PedidosActivos { get; set; }
     }
 }

@@ -38,6 +38,12 @@ const enviar = (res, status, cuerpo) => {
   res.end(JSON.stringify(cuerpo));
 };
 
+// Igual que la API real: la mesa está ocupada mientras tenga pedidos sin entregar.
+const conOcupacion = (m) => {
+  const pedidosActivos = pedidos.filter((p) => p.mesaId === m.mesaId && p.estado !== 'Entregado').length;
+  return { ...m, estado: pedidosActivos > 0 ? 'Ocupada' : m.estado, pedidosActivos };
+};
+
 const siguienteId = (lista, campo) => Math.max(0, ...lista.map((x) => x[campo])) + 1;
 const mismoNombre = (a, b) => a.trim().toLowerCase() === b.trim().toLowerCase();
 const texto = (v, max) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
@@ -148,9 +154,10 @@ createServer((req, res) => {
       if (recurso === 'mesas') {
         if (a?.toLowerCase() === 'numero') {
           const mesa = mesas.find((m) => m.numero === Number(b));
-          return mesa ? enviar(res, 200, mesa) : enviar(res, 404, `No existe la mesa número ${b}.`);
+          return mesa ? enviar(res, 200, conOcupacion(mesa)) : enviar(res, 404, `No existe la mesa número ${b}.`);
         }
-        return a ? lectura(mesas, a, 'mesaId') : enviar(res, 200, mesas);
+        if (a) { const mesa = mesas.find((m) => m.mesaId === Number(a)); return mesa ? enviar(res, 200, conOcupacion(mesa)) : enviar(res, 404); }
+        return enviar(res, 200, mesas.map(conOcupacion));
       }
       if (recurso === 'productos') {
         if (a?.toLowerCase() === 'categoria') return enviar(res, 200, productos.filter((x) => x.categoriaId === Number(b)));

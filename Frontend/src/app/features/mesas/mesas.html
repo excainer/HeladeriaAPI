@@ -1,8 +1,18 @@
 <section class="lectura">
-  <h1>Mesas</h1>
+  <div class="encabezado">
+    <h1>Mesas</h1>
+    @if (!cargando() && mesas().length) {
+      <p class="resumen" aria-live="polite">{{ ocupadas() }} de {{ mesas().length }} ocupadas · se actualiza cada 5 segundos</p>
+    }
+  </div>
+
+  @if (error() && mesas().length) {
+    <p class="aviso" role="alert">No se pudo actualizar. Se intentará de nuevo en unos segundos.</p>
+  }
+
   @if (cargando()) {
     <p role="status">Cargando mesas…</p>
-  } @else if (error()) {
+  } @else if (error() && !mesas().length) {
     <div class="aviso" role="alert">
       <p>{{ error() }}</p>
       <button type="button" class="boton boton--secundario" (click)="cargar()">Reintentar</button>
@@ -10,7 +20,13 @@
   } @else {
     <ul class="mesas">
       @for (m of mesas(); track m.mesaId) {
-        <li class="mesa"><strong>Mesa {{ m.numero }}</strong><span>{{ m.estado }}</span></li>
+        <li class="mesa" [class.mesa--ocupada]="estaOcupada(m)">
+          <strong>Mesa {{ m.numero }}</strong>
+          <span class="mesa__estado">{{ m.estado }}</span>
+          @if (detalle(m)) {
+            <span class="mesa__detalle">{{ detalle(m) }}</span>
+          }
+        </li>
       } @empty {
         <li>No hay mesas registradas.</li>
       }

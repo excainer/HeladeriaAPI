@@ -179,6 +179,7 @@ Seguridad:
 - **Tamaños:** se definen por categoría (por ejemplo, Helados: Pequeño, Mediano, Grande). Si la categoría de un producto tiene tamaños activos, hay que elegir uno; si no tiene, el producto se pide con su precio base.
 - **Catálogo:** no se repiten nombres (categorías en general; productos y tamaños dentro de su categoría). Productos y tamaños no se borran: se desactivan, para conservar el histórico de pedidos.
 - **Productos:** si un producto no existe la API responde `404`; si está inactivo, `400`.
+- **Mesas:** el estado se calcula con los pedidos: una mesa está *Ocupada* mientras tenga pedidos sin entregar y vuelve a *Disponible* cuando se entregan todos. La respuesta incluye `pedidosActivos`.
 - **Transacción:** el pedido y todos sus detalles se guardan juntos; si algo falla no queda nada a medias.
 - **Estados:** `Pendiente` → `En Preparacion` → `Listo` → `Entregado`. Solo se puede avanzar al siguiente; retroceder o saltar un paso responde `409`.
 - **Textos:** `sabores` y `toppings` admiten hasta 200 caracteres y `observaciones` hasta 300.
