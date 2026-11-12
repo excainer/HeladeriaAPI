@@ -10,6 +10,7 @@ interface Enlace {
 
 const ENLACES: readonly Enlace[] = [
   { ruta: 'preparacion', texto: 'Cocina' },
+  { ruta: 'nuevo-pedido', texto: 'Nuevo pedido' },
   { ruta: 'pedidos', texto: 'Pedidos' },
   { ruta: 'dashboard', texto: 'Resumen' },
   { ruta: 'productos', texto: 'Productos', soloAdministrador: true },

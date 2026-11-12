@@ -1,5 +1,7 @@
 <section class="menu">
-  <h1>¿Qué se te antoja hoy?</h1>
+  @if (!modoPersonal()) {
+    <h1>¿Qué se te antoja hoy?</h1>
+  }
 
   @if (cargando()) {
     <p class="estado" role="status">Cargando el menú…</p>
@@ -123,7 +125,7 @@
 
   <p class="solo-lectores" aria-live="polite">{{ aviso() }}</p>
 
-  @if (carrito.cantidadTotal() > 0) {
+  @if (carrito.cantidadTotal() > 0 && !modoPersonal()) {
     <a class="boton barra-pedido" routerLink="/carrito">
       <span>Ver pedido ({{ carrito.cantidadTotal() }})</span>
       <span>{{ carrito.total() | pesos }}</span>

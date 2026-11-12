@@ -36,7 +36,8 @@ export class Pedidos {
   protected readonly error = signal<string | null>(null);
 
   protected readonly filtroEstado = signal<EstadoPedido | null>(null);
-  protected readonly filtroMesa = signal<number | null>(null);
+  /** null = todas; 'llevar' = solo para llevar; número = una mesa. */
+  protected readonly filtroMesa = signal<number | 'llevar' | null>(null);
 
   protected readonly abierto = signal<number | null>(null);
   protected readonly detalles = signal<DetallePedido[]>([]);
@@ -46,7 +47,8 @@ export class Pedidos {
   protected readonly visibles = computed(() =>
     this.pedidos().filter((p) =>
       (this.filtroEstado() === null || p.estado === this.filtroEstado()) &&
-      (this.filtroMesa() === null || p.mesaId === this.filtroMesa())));
+      (this.filtroMesa() === null ||
+       (this.filtroMesa() === 'llevar' ? p.mesaId === null : p.mesaId === this.filtroMesa()))));
 
   constructor() {
     // Nombres de tamaños aparte: si fallan, el pedido igual se muestra (sin el tamaño).
@@ -75,8 +77,9 @@ export class Pedidos {
     });
   }
 
-  protected numeroMesa(mesaId: number): number {
-    return this.mesas().find((m) => m.mesaId === mesaId)?.numero ?? mesaId;
+  /** "Mesa 3" o "Para llevar". */
+  protected etiquetaMesa(mesaId: number | null): string {
+    return mesaId === null ? 'Para llevar' : `Mesa ${this.mesas().find((m) => m.mesaId === mesaId)?.numero ?? mesaId}`;
   }
 
   /** "Helado de Vainilla (Grande)", o solo el nombre si no tiene tamaño. */
@@ -94,7 +97,7 @@ export class Pedidos {
   }
 
   protected elegirMesa(valor: string) {
-    this.filtroMesa.set(valor === '' ? null : Number(valor));
+    this.filtroMesa.set(valor === '' ? null : valor === 'llevar' ? 'llevar' : Number(valor));
   }
 
   protected alternarDetalle(p: Pedido) {

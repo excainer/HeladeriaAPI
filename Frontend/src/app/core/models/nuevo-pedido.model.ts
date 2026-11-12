@@ -17,3 +17,9 @@ export interface NuevoPedido {
   mesaId: number;
   detalles: NuevoDetalle[];
 }
+
+/** Cuerpo de POST /api/Pedidos/personal: la mesa es opcional (null = para llevar). */
+export interface PedidoDelPersonal {
+  mesaId: number | null;
+  detalles: NuevoDetalle[];
+}

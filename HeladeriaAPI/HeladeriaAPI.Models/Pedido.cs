@@ -18,9 +18,20 @@ namespace HeladeriaAPI.Models
         public int PedidoId { get; set; }
 
         /// <summary>
-        /// Mesa o punto donde se genera el pedido.
+        /// Mesa donde se genera el pedido, o null si es para llevar (registrado por el personal).
         /// </summary>
-        public int MesaId { get; set; }
+        public int? MesaId { get; set; }
+
+        /// <summary>
+        /// Usuario del personal que registró el pedido, o null si lo hizo el cliente desde la mesa.
+        /// </summary>
+        public int? RegistradoPorId { get; set; }
+
+        /// <summary>
+        /// Nombre de quien lo registró (se calcula con la tabla Usuarios; no es una columna).
+        /// </summary>
+        [Computed]
+        public string? RegistradoPor { get; set; }
 
         /// <summary>
         /// Fecha y hora exacta de registro.

@@ -465,6 +465,48 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DetallePedido'
+  /api/Pedidos/personal:
+    post:
+      tags:
+        - Pedidos
+      summary: "Registra un pedido desde el personal (por ejemplo, el cliente pidió en el mostrador o al mesero).\r\nLa mesa es opcional: sin mesa es un pedido para llevar. Queda guardado quién lo registró."
+      requestBody:
+        description: Mesa (opcional) y lista de ítems del pedido.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarPedidoRequest'
+          text/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarPedidoRequest'
+          application/*+json:
+            schema:
+              $ref: '#/components/schemas/RegistrarPedidoRequest'
+      responses:
+        '201':
+          description: Pedido registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+        '400':
+          description: 'Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          description: No hay sesión del personal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe la mesa o alguno de los productos indicados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   '/api/Pedidos/{id}/estado':
     put:
       tags:
@@ -1176,6 +1218,14 @@ components:
         mesaId:
           type: integer
           format: int32
+          nullable: true
+        registradoPorId:
+          type: integer
+          format: int32
+          nullable: true
+        registradoPor:
+          type: string
+          nullable: true
         fecha:
           type: string
           format: date-time
@@ -1277,6 +1327,26 @@ components:
           description: 'Si el producto se puede pedir. Por defecto, sí.'
       additionalProperties: false
       description: Datos para crear o editar un producto.
+    RegistrarPedidoRequest:
+      required:
+        - detalles
+      type: object
+      properties:
+        mesaId:
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+          description: 'Mesa del pedido, o null si es para llevar.'
+          format: int32
+          nullable: true
+        detalles:
+          minItems: 1
+          type: array
+          items:
+            $ref: '#/components/schemas/DetalleSolicitud'
+          description: Ítems del pedido (mínimo uno).
+      additionalProperties: false
+      description: Datos para que el personal registre un pedido.
     Tamano:
       type: object
       properties:

@@ -1,0 +1,66 @@
+<section class="registrar">
+  <div class="encabezado">
+    <h1>Nuevo pedido</h1>
+    <p class="ayuda">Para clientes que piden en el mostrador o al mesero. Quedará registrado a tu nombre.</p>
+  </div>
+
+  <div class="contenido">
+    <div class="catalogo">
+      <app-menu [modoPersonal]="true" />
+    </div>
+
+    <aside class="resumen" aria-labelledby="titulo-resumen">
+      <h2 id="titulo-resumen">Pedido</h2>
+
+      <label class="campo">
+        ¿Para dónde es?
+        <select #campoMesa (change)="mesaElegida.set(campoMesa.value)">
+          <option value="" [selected]="mesaElegida() === ''">Para llevar (mostrador)</option>
+          @for (m of mesas(); track m.mesaId) {
+            <option [value]="m.mesaId" [selected]="mesaElegida() === '' + m.mesaId">Mesa {{ m.numero }}</option>
+          }
+        </select>
+      </label>
+
+      @if (registrado(); as r) {
+        <div class="mensaje-exito" role="status">
+          <p>Pedido #{{ r.pedidoId }} registrado {{ r.destino }}. Ya está en la cocina.</p>
+          <a routerLink="/personal/preparacion">Ver en la cocina</a>
+        </div>
+      }
+
+      @if (carrito.lineas().length === 0) {
+        <p class="vacio">Agrega productos desde el menú.</p>
+      } @else {
+        <ul class="lineas">
+          @for (linea of carrito.lineas(); track linea.id) {
+            <li class="linea">
+              <div class="linea__datos">
+                <strong>{{ linea.producto.nombre }}@if (linea.tamano) { ({{ linea.tamano.nombre }})}</strong>
+                @if (linea.sabores.length) { <span>Sabores: {{ linea.sabores.join(', ') }}</span> }
+                @if (linea.toppings.length) { <span>Toppings: {{ linea.toppings.join(', ') }}</span> }
+                @if (linea.observaciones) { <span>Notas: {{ linea.observaciones }}</span> }
+              </div>
+              <div class="linea__cantidad" role="group" [attr.aria-label]="'Cantidad de ' + linea.producto.nombre">
+                <button type="button" class="paso" aria-label="Quitar una unidad" (click)="menos(linea)">−</button>
+                <span>{{ linea.cantidad }}</span>
+                <button type="button" class="paso" aria-label="Agregar una unidad" (click)="mas(linea)">+</button>
+              </div>
+              <span class="linea__subtotal">{{ linea.cantidad * precioUnitario(linea) | pesos }}</span>
+              <button type="button" class="quitar" [attr.aria-label]="'Quitar ' + linea.producto.nombre" (click)="quitar(linea)">✕</button>
+            </li>
+          }
+        </ul>
+        <p class="total"><span>Total</span><strong>{{ carrito.total() | pesos }}</strong></p>
+      }
+
+      @if (error()) {
+        <p class="mensaje-error" role="alert">{{ error() }}</p>
+      }
+
+      <button type="button" class="boton" [disabled]="enviando() || carrito.lineas().length === 0" (click)="registrar()">
+        {{ enviando() ? 'Registrando…' : 'Registrar pedido' }}
+      </button>
+    </aside>
+  </div>
+</section>

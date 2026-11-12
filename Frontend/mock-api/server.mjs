@@ -229,8 +229,14 @@ createServer((req, res) => {
     }
 
     // --- Pedidos: mismas reglas que la API real
-    if (recurso === 'pedidos' && req.method === 'POST' && !a) {
-      if (!mesas.some((m) => m.mesaId === datos.mesaId)) return enviar(res, 404, `No existe la mesa ${datos.mesaId}.`);
+    // Pedido del cliente (POST /pedidos, mesa obligatoria) o registrado por el personal
+    // (POST /pedidos/personal, mesa opcional = para llevar, queda quién lo registró).
+    const delPersonal = a === 'personal';
+    if (recurso === 'pedidos' && req.method === 'POST' && (!a || delPersonal)) {
+      if (delPersonal && !yo) return sinSesion();
+      const mesaId = datos.mesaId ?? null;
+      if (!delPersonal && mesaId === null) return enviar(res, 400, 'La mesa es obligatoria.');
+      if (mesaId !== null && !mesas.some((m) => m.mesaId === mesaId)) return enviar(res, 404, `No existe la mesa ${mesaId}.`);
       if (!Array.isArray(datos.detalles) || !datos.detalles.length) return enviar(res, 400, 'El pedido debe tener al menos un detalle.');
       const items = [];
       for (const d of datos.detalles) {
@@ -247,7 +253,10 @@ createServer((req, res) => {
       }
       const pedidoId = siguienteId(pedidos, 'pedidoId');
       const total = items.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0);
-      const pedido = { pedidoId, mesaId: datos.mesaId, fecha: new Date().toISOString(), estado: 'Pendiente', total };
+      const pedido = {
+        pedidoId, mesaId, fecha: new Date().toISOString(), estado: 'Pendiente', total,
+        registradoPorId: delPersonal ? yo.usuarioId : null, registradoPor: delPersonal ? yo.nombre : null,
+      };
       pedidos.push(pedido);
       for (const d of items) {
         detalles.push({ sabores: null, toppings: null, observaciones: null, ...d, detallePedidoId: siguienteId(detalles, 'detallePedidoId'), pedidoId });

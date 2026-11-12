@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { Producto } from '../models/producto.model';
 import { NuevoPedido } from '../models/nuevo-pedido.model';
 import { Tamano } from '../models/tamano.model';
@@ -6,7 +6,14 @@ import { Tamano } from '../models/tamano.model';
 /** Copia del tamaño elegido: nombre y adicional quedan guardados aunque el catálogo cambie. */
 export type TamanoElegido = Pick<Tamano, 'tamanoId' | 'nombre' | 'precioAdicional'>;
 
-const CLAVE = 'heladapp.carrito';
+/**
+ * Dónde se guarda el carrito en sessionStorage. El cliente usa el valor por defecto; la pantalla
+ * del personal "Nuevo pedido" usa otra clave para que los dos carritos no se mezclen.
+ */
+export const CLAVE_CARRITO = new InjectionToken<string>('CLAVE_CARRITO', {
+  providedIn: 'root',
+  factory: () => 'heladapp.carrito',
+});
 
 /** Precio por unidad de una línea: producto + adicional del tamaño. */
 export function precioUnitario(linea: Pick<LineaCarrito, 'producto' | 'tamano'>): number {
@@ -43,6 +50,7 @@ export interface EntradaCarrito {
   providedIn: 'root',
 })
 export class CarritoService {
+  private readonly clave = inject(CLAVE_CARRITO);
 
   private readonly _lineas = signal<LineaCarrito[]>(this.leer());
 
@@ -124,7 +132,7 @@ export class CarritoService {
   private guardar(lineas: LineaCarrito[]) {
     this._lineas.set(lineas);
     try {
-      sessionStorage.setItem(CLAVE, JSON.stringify(lineas));
+      sessionStorage.setItem(this.clave, JSON.stringify(lineas));
     } catch {
       // Sin almacenamiento disponible: el carrito se mantiene solo en memoria.
     }
@@ -132,7 +140,7 @@ export class CarritoService {
 
   private leer(): LineaCarrito[] {
     try {
-      const guardado = sessionStorage.getItem(CLAVE);
+      const guardado = sessionStorage.getItem(this.clave);
       return guardado ? (JSON.parse(guardado) as LineaCarrito[]) : [];
     } catch {
       return [];

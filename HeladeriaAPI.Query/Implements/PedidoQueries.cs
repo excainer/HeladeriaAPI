@@ -23,9 +23,10 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<IEnumerable<Pedido>> ObtenerTodosAsync()
         {
             const string sql = @"
-                SELECT PedidoId, MesaId, Fecha, Estado, Total
-                FROM Pedidos
-                ORDER BY Fecha DESC;";
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                FROM Pedidos p
+                LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
+                ORDER BY p.Fecha DESC;";
 
             return await _conexion.QueryAsync<Pedido>(sql);
         }
@@ -36,9 +37,10 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<Pedido?> ObtenerPorIdAsync(int id)
         {
             const string sql = @"
-                SELECT PedidoId, MesaId, Fecha, Estado, Total
-                FROM Pedidos
-                WHERE PedidoId = @Id;";
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                FROM Pedidos p
+                LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
+                WHERE p.PedidoId = @Id;";
 
             return await _conexion.QueryFirstOrDefaultAsync<Pedido>(sql, new { Id = id });
         }
@@ -50,10 +52,11 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<IEnumerable<Pedido>> ObtenerPorEstadoAsync(string estado)
         {
             const string sql = @"
-                SELECT PedidoId, MesaId, Fecha, Estado, Total
-                FROM Pedidos
-                WHERE Estado = @Estado
-                ORDER BY Fecha ASC;";
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                FROM Pedidos p
+                LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
+                WHERE p.Estado = @Estado
+                ORDER BY p.Fecha ASC;";
 
             return await _conexion.QueryAsync<Pedido>(sql, new { Estado = estado });
         }
@@ -64,10 +67,11 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<IEnumerable<Pedido>> ObtenerPorMesaAsync(int mesaId)
         {
             const string sql = @"
-                SELECT PedidoId, MesaId, Fecha, Estado, Total
-                FROM Pedidos
-                WHERE MesaId = @MesaId
-                ORDER BY Fecha DESC;";
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                FROM Pedidos p
+                LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
+                WHERE p.MesaId = @MesaId
+                ORDER BY p.Fecha DESC;";
 
             return await _conexion.QueryAsync<Pedido>(sql, new { MesaId = mesaId });
         }

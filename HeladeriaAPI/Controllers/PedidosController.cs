@@ -120,14 +120,38 @@ namespace HeladeriaAPI.Controllers
         [ProducesResponseType(typeof(Pedido), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Crear([FromBody] CrearPedidoRequest solicitud)
+        public Task<IActionResult> Crear([FromBody] CrearPedidoRequest solicitud) =>
+            CrearPedidoAsync(solicitud.MesaId, solicitud.Detalles, registradoPorId: null);
+
+        /// <summary>
+        /// Registra un pedido desde el personal (por ejemplo, el cliente pidió en el mostrador o al mesero).
+        /// La mesa es opcional: sin mesa es un pedido para llevar. Queda guardado quién lo registró.
+        /// </summary>
+        /// <param name="solicitud">Mesa (opcional) y lista de ítems del pedido.</param>
+        /// <response code="201">Pedido registrado.</response>
+        /// <response code="400">Los datos no son válidos, algún producto no está disponible o falta elegir un tamaño válido.</response>
+        /// <response code="401">No hay sesión del personal.</response>
+        /// <response code="404">No existe la mesa o alguno de los productos indicados.</response>
+        [Authorize]
+        [HttpPost("personal")]
+        [ProducesResponseType(typeof(Pedido), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public Task<IActionResult> RegistrarPorPersonal([FromBody] RegistrarPedidoRequest solicitud) =>
+            CrearPedidoAsync(solicitud.MesaId, solicitud.Detalles, Seguridad.IdUsuario(User));
+
+        /// <summary>
+        /// Lógica común para crear un pedido: valida mesa y productos, toma precios del catálogo
+        /// y guarda pedido y detalles en una sola transacción.
+        /// </summary>
+        private async Task<IActionResult> CrearPedidoAsync(int? mesaId, List<DetalleSolicitud> items, int? registradoPorId)
         {
-            var mesa = await _mesaQueries.ObtenerPorIdAsync(solicitud.MesaId);
-            if (mesa is null)
-                return NotFound($"No existe la mesa {solicitud.MesaId}.");
+            if (mesaId is not null && await _mesaQueries.ObtenerPorIdAsync(mesaId.Value) is null)
+                return NotFound($"No existe la mesa {mesaId}.");
 
             var productos = (await _productoQueries.ObtenerPorIdsAsync(
-                    solicitud.Detalles.Select(d => d.ProductoId)))
+                    items.Select(d => d.ProductoId)))
                 .ToDictionary(p => p.ProductoId);
 
             // Tamaños de todas las categorías involucradas, en una sola consulta.
@@ -136,7 +160,7 @@ namespace HeladeriaAPI.Controllers
                 .ToList();
 
             var detalles = new List<DetallePedido>();
-            foreach (var item in solicitud.Detalles)
+            foreach (var item in items)
             {
                 if (!productos.TryGetValue(item.ProductoId, out var producto))
                     return NotFound($"No existe el producto {item.ProductoId}.");
@@ -176,7 +200,7 @@ namespace HeladeriaAPI.Controllers
 
             // Pedido y detalles se guardan en una sola transacción: o todo o nada.
             var pedidoId = await _pedidoRepository.CrearConDetallesAsync(
-                new Pedido { MesaId = solicitud.MesaId }, detalles);
+                new Pedido { MesaId = mesaId, RegistradoPorId = registradoPorId }, detalles);
 
             var creado = await _pedidoQueries.ObtenerPorIdAsync(pedidoId);
             return CreatedAtAction(nameof(ObtenerPorId), new { id = pedidoId }, creado);
@@ -274,6 +298,20 @@ namespace HeladeriaAPI.Controllers
         /// <summary>Mesa donde se genera el pedido.</summary>
         [Range(1, int.MaxValue)]
         public int MesaId { get; set; }
+
+        /// <summary>Ítems del pedido (mínimo uno).</summary>
+        [Required, MinLength(1)]
+        public List<DetalleSolicitud> Detalles { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Datos para que el personal registre un pedido.
+    /// </summary>
+    public class RegistrarPedidoRequest
+    {
+        /// <summary>Mesa del pedido, o null si es para llevar.</summary>
+        [Range(1, int.MaxValue)]
+        public int? MesaId { get; set; }
 
         /// <summary>Ítems del pedido (mínimo uno).</summary>
         [Required, MinLength(1)]

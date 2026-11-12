@@ -144,7 +144,7 @@ describe('Preparacion', () => {
     expect(el.querySelectorAll('.columna')[1].querySelector('.cancelar')).toBeNull(); // en preparación no se cancela
     (pendientes.querySelector('.cancelar') as HTMLButtonElement).click();
     await asentar();
-    expect(el.querySelector('.confirmar')!.textContent).toContain('¿Cancelar el pedido 12 de la mesa 3?');
+    expect(el.querySelector('.confirmar')!.textContent).toContain('¿Cancelar el pedido 12 (Mesa 3)?');
     const si = Array.from(el.querySelectorAll<HTMLButtonElement>('.confirmar button')).find((b) => b.textContent!.includes('Sí'))!;
     si.click();
     const req = http.expectOne('/api/Pedidos/12/cancelar');
@@ -165,5 +165,17 @@ describe('Preparacion', () => {
     http.expectOne('/api/Pedidos/12/cancelar').flush('Solo se pueden cancelar pedidos pendientes: la cocina ya empezó a prepararlo.', { status: 409, statusText: 'Conflict' });
     await asentar();
     expect(el.querySelector('[role=alert]')!.textContent).toContain('ya empezó');
+  });
+
+  it('muestra "Para llevar" y quién registró el pedido', async () => {
+    const f = await crear();
+    await vi.advanceTimersByTimeAsync(5000);
+    http.expectOne('/api/Pedidos').flush([...pedidos, { pedidoId: 20, mesaId: null, fecha: hace(0), estado: 'Pendiente', total: 7000, registradoPorId: 7, registradoPor: 'Juan Silva' }]);
+    await vi.advanceTimersByTimeAsync(0);
+    http.expectOne('/api/Pedidos/20/detalles').flush([]);
+    await asentar();
+    const tarjeta = Array.from<HTMLElement>(f.nativeElement.querySelectorAll('.pedido')).find((e) => e.textContent!.includes('Pedido 20'))!;
+    expect(tarjeta.querySelector('.pedido__mesa')!.textContent).toBe('Para llevar');
+    expect(tarjeta.textContent).toContain('por Juan Silva');
   });
 });

@@ -184,8 +184,9 @@ export class Preparacion {
     });
   }
 
-  protected mesa(p: Pedido): number | string {
-    return this.mesas().get(p.mesaId) ?? p.mesaId;
+  /** "Mesa 3" o "Para llevar". */
+  protected mesa(p: Pedido): string {
+    return p.mesaId === null ? 'Para llevar' : `Mesa ${this.mesas().get(p.mesaId) ?? p.mesaId}`;
   }
 
   protected items(p: Pedido): DetallePedido[] {

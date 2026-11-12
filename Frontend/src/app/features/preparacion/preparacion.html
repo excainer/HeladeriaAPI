@@ -35,8 +35,8 @@
           @for (p of col.pedidos; track p.pedidoId) {
             <article class="pedido" [class.pedido--nuevo]="resaltados().has(p.pedidoId)">
               <div class="pedido__cabecera">
-                <strong class="pedido__mesa">Mesa {{ mesa(p) }}</strong>
-                <span>Pedido {{ p.pedidoId }} · {{ hace(p) }}</span>
+                <strong class="pedido__mesa">{{ mesa(p) }}</strong>
+                <span>Pedido {{ p.pedidoId }} · {{ hace(p) }}@if (p.registradoPor) {<br />por {{ p.registradoPor }}}</span>
               </div>
               @for (d of items(p); track d.detallePedidoId) {
                 <div class="item">
@@ -56,7 +56,7 @@
               @if (col.estado === 'Pendiente') {
                 @if (confirmando() === p.pedidoId) {
                   <div class="confirmar" role="group" [attr.aria-label]="'Confirmar cancelación del pedido ' + p.pedidoId">
-                    <p>¿Cancelar el pedido {{ p.pedidoId }} de la mesa {{ mesa(p) }}?</p>
+                    <p>¿Cancelar el pedido {{ p.pedidoId }} ({{ mesa(p) }})?</p>
                     <div class="acciones">
                       <button type="button" class="boton boton--chico" [disabled]="enCurso().has(p.pedidoId)" (click)="cancelar(p)">Sí, cancelar</button>
                       <button type="button" class="boton boton--secundario boton--chico" (click)="noCancelar()">No</button>

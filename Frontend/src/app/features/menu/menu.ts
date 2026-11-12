@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, WritableSignal, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, WritableSignal, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
@@ -35,6 +35,9 @@ export class Menu {
   private readonly productoService = inject(ProductoService);
   private readonly tamanoService = inject(TamanoService);
   protected readonly carrito = inject(CarritoService);
+
+  /** Dentro de "Nuevo pedido" del personal: sin título ni barra de "Ver pedido" (el carrito va al lado). */
+  readonly modoPersonal = input(false);
 
   protected readonly sabores = SABORES;
   protected readonly toppings = TOPPINGS;

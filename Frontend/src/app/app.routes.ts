@@ -64,6 +64,12 @@ export const routes: Routes = [
           import('./features/preparacion/preparacion').then(m => m.Preparacion)
       },
       {
+        path: 'nuevo-pedido',
+        title: 'Nuevo pedido · HeladApp',
+        loadComponent: () =>
+          import('./features/registrar-pedido/registrar-pedido').then(m => m.RegistrarPedido)
+      },
+      {
         path: 'pedidos',
         title: 'Pedidos · HeladApp',
         loadComponent: () =>

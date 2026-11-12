@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Api } from './api';
 import { Pedido } from '../models/pedido.model';
 import { DetallePedido } from '../models/detalle-pedido.model';
-import { NuevoPedido } from '../models/nuevo-pedido.model';
+import { NuevoPedido, PedidoDelPersonal } from '../models/nuevo-pedido.model';
 import { EstadoPedido } from '../models/estado-pedido.model';
 
 @Injectable({
@@ -39,12 +39,17 @@ export class PedidoService {
     return this.api.post<Pedido>(this.endpoint, pedido);
   }
 
-  /** Cambia el estado. El backend responde 204 sin contenido. */
+  /** Registra un pedido desde el personal (con mesa o para llevar); queda constancia de quién fue. */
+  registrar(pedido: PedidoDelPersonal) {
+    return this.api.post<Pedido>(`${this.endpoint}/personal`, pedido);
+  }
+
   /** Cancela un pedido pendiente (personal). Falla con 409 si la cocina ya empezó. */
   cancelar(pedidoId: number) {
     return this.api.post<void>(`${this.endpoint}/${pedidoId}/cancelar`, {});
   }
 
+  /** Cambia el estado. El backend responde 204 sin contenido. */
   actualizarEstado(pedidoId: number, estado: EstadoPedido) {
     return this.api.put<void>(`${this.endpoint}/${pedidoId}/estado`, { estado });
   }

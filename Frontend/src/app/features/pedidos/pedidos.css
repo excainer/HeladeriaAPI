@@ -29,3 +29,4 @@ select { min-height: var(--alto-tactil); padding: 0 var(--espacio-3); border: 2p
 .detalle ul { display: flex; flex-direction: column; gap: var(--espacio-2); margin: 0; padding-left: var(--espacio-5); }
 
 .vacio { padding: var(--espacio-4); border-radius: var(--radio-medio); background: var(--vainilla-suave); }
+.origen { font-size: var(--texto-pequeno); }

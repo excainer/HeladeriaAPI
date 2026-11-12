@@ -37,7 +37,7 @@ CREATE TABLE dbo.Mesas (
 IF OBJECT_ID('dbo.Pedidos') IS NULL
 CREATE TABLE dbo.Pedidos (
     PedidoId INT IDENTITY(1,1) PRIMARY KEY,
-    MesaId INT NOT NULL REFERENCES dbo.Mesas(MesaId),
+    MesaId INT NULL REFERENCES dbo.Mesas(MesaId),  -- NULL = para llevar (registrado por el personal)
     Fecha DATETIME NOT NULL DEFAULT GETDATE(),
     Estado NVARCHAR(30) NOT NULL DEFAULT 'Pendiente',
     Total DECIMAL(10,2) NOT NULL DEFAULT 0
@@ -79,6 +79,16 @@ CREATE TABLE dbo.Usuarios (
     Rol NVARCHAR(30) NOT NULL DEFAULT 'Empleado',
     Activo BIT NOT NULL DEFAULT 1
 );
+GO
+
+-- Pedidos registrados por el personal: quién lo registró (NULL = el cliente desde la mesa)
+-- y mesa opcional para pedidos "para llevar". Sirve para bases nuevas y existentes.
+IF COL_LENGTH('dbo.Pedidos', 'RegistradoPorId') IS NULL
+    ALTER TABLE dbo.Pedidos
+        ADD RegistradoPorId INT NULL CONSTRAINT FK_Pedidos_Usuarios REFERENCES dbo.Usuarios(UsuarioId);
+
+IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Pedidos') AND name = 'MesaId' AND is_nullable = 0)
+    ALTER TABLE dbo.Pedidos ALTER COLUMN MesaId INT NULL;
 GO
 
 -- Actualización de bases anteriores: columna LiberadaEn. Se marca como "liberada ahora"
