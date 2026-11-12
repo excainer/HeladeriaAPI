@@ -28,8 +28,10 @@ export class RegistrarPedido {
 
   protected readonly precioUnitario = precioUnitario;
   protected readonly mesas = signal<Mesa[]>([]);
-  /** '' = para llevar; si no, el id de la mesa. */
+  /** '' = mostrador (sin mesa); si no, el id de la mesa. */
   protected readonly mesaElegida = signal('');
+  /** Para llevar con mesa; sin mesa (mostrador) siempre es para llevar. */
+  protected readonly paraLlevar = signal(false);
   protected readonly enviando = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly registrado = signal<{ pedidoId: number; destino: string } | null>(null);
@@ -56,17 +58,19 @@ export class RegistrarPedido {
   protected registrar() {
     if (this.enviando() || this.carrito.lineas().length === 0) return;
     const mesaId = this.mesaElegida() ? Number(this.mesaElegida()) : null;
-    const destino = mesaId === null
-      ? 'para llevar'
-      : `para la mesa ${this.mesas().find((m) => m.mesaId === mesaId)?.numero ?? mesaId}`;
+    const paraLlevar = mesaId === null || this.paraLlevar();
+    const destino = (mesaId === null
+      ? 'en mostrador'
+      : `para la mesa ${this.mesas().find((m) => m.mesaId === mesaId)?.numero ?? mesaId}`) + (paraLlevar ? ' (para llevar)' : '');
 
     this.enviando.set(true);
     this.error.set(null);
     this.registrado.set(null);
-    this.pedidoService.registrar({ mesaId, detalles: this.carrito.aNuevoPedido(0).detalles }).subscribe({
+    this.pedidoService.registrar({ mesaId, paraLlevar, detalles: this.carrito.aNuevoPedido(0).detalles }).subscribe({
       next: (pedido) => {
         this.enviando.set(false);
         this.carrito.vaciar();
+        this.paraLlevar.set(false);
         this.registrado.set({ pedidoId: pedido.pedidoId, destino });
       },
       error: (e: unknown) => {

@@ -255,6 +255,7 @@ createServer((req, res) => {
       const total = items.reduce((s, d) => s + d.cantidad * d.precioUnitario, 0);
       const pedido = {
         pedidoId, mesaId, fecha: new Date().toISOString(), estado: 'Pendiente', total,
+        paraLlevar: !!datos.paraLlevar || mesaId === null,
         registradoPorId: delPersonal ? yo.usuarioId : null, registradoPor: delPersonal ? yo.nombre : null,
       };
       pedidos.push(pedido);

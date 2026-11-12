@@ -22,6 +22,8 @@ export class Carrito {
 
   protected readonly precioUnitario = precioUnitario;
   protected readonly enviando = signal(false);
+  /** El cliente elige si lo come en la mesa o se lo empacan para llevar. */
+  protected readonly paraLlevar = signal(false);
   protected readonly error = signal<string | null>(null);
 
   protected mas(linea: LineaCarrito) {
@@ -44,7 +46,7 @@ export class Carrito {
     this.enviando.set(true);
     this.error.set(null);
 
-    this.pedidos.crear(this.carrito.aNuevoPedido(mesa.mesaId)).subscribe({
+    this.pedidos.crear({ ...this.carrito.aNuevoPedido(mesa.mesaId), paraLlevar: this.paraLlevar() }).subscribe({
       next: (pedido) => {
         this.carrito.vaciar();
         this.enviando.set(false);

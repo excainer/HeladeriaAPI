@@ -83,11 +83,12 @@ describe('Pedidos', () => {
     expect(el.querySelector('.detalle')!.textContent).toContain('Sin crema');
   });
 
-  it('distingue pedidos para llevar y quién los registró, y los filtra', async () => {
+  it('distingue mostrador, para llevar y quién los registró, y filtra los para llevar', async () => {
     const http = configurar();
     const f = TestBed.createComponent(Pedidos);
     http.expectOne('/api/Pedidos').flush([
-      { pedidoId: 30, mesaId: null, fecha: '2026-11-12T10:00:00', estado: 'Pendiente', total: 7000, registradoPorId: 7, registradoPor: 'Juan Silva' },
+      { pedidoId: 30, mesaId: null, fecha: '2026-11-12T10:00:00', estado: 'Pendiente', total: 7000, paraLlevar: true, registradoPorId: 7, registradoPor: 'Juan Silva' },
+      { pedidoId: 32, mesaId: 1, fecha: '2026-11-12T10:10:00', estado: 'Pendiente', total: 7000, paraLlevar: true, registradoPorId: null, registradoPor: null },
       { pedidoId: 31, mesaId: 1, fecha: '2026-11-12T10:05:00', estado: 'Pendiente', total: 5000, registradoPorId: null, registradoPor: null },
     ]);
     http.expectOne('/api/Mesas').flush([{ mesaId: 1, numero: 1, estado: 'x' }]);
@@ -95,14 +96,15 @@ describe('Pedidos', () => {
     await f.whenStable();
     const el: HTMLElement = f.nativeElement;
     const filas = () => Array.from(el.querySelectorAll('.pedido__fila')).map((r) => r.textContent!.replace(/\s+/g, ' '));
-    expect(filas()[0]).toContain('Para llevar');
+    expect(filas()[0]).toContain('Mostrador · 🥡 Para llevar');
+    expect(filas().find((f) => f.includes('Pedido 32'))).toContain('Mesa 1 · 🥡 Para llevar'); // pedido para llevar hecho desde la mesa
     expect(filas()[0]).toContain('Registrado por Juan Silva');
-    expect(filas()[1]).toContain('Desde la mesa');
+    expect(filas().find((f) => f.includes('Pedido 31'))).toContain('Desde la mesa');
     const select = el.querySelector('select') as HTMLSelectElement;
     select.value = 'llevar';
     select.dispatchEvent(new Event('change'));
     await f.whenStable();
-    expect(filas().length).toBe(1);
-    expect(filas()[0]).toContain('Pedido 30');
+    expect(filas().length).toBe(2); // el de mostrador y el de la mesa 1
+    expect(filas().every((f) => f.includes('Para llevar'))).toBe(true);
   });
 });

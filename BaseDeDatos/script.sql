@@ -91,6 +91,15 @@ IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Pedidos') 
     ALTER TABLE dbo.Pedidos ALTER COLUMN MesaId INT NULL;
 GO
 
+-- Para llevar: el cliente (desde su mesa) o el personal lo marcan para empacarlo.
+-- Los pedidos de mostrador (sin mesa) que ya existían quedan como para llevar.
+IF COL_LENGTH('dbo.Pedidos', 'ParaLlevar') IS NULL
+BEGIN
+    ALTER TABLE dbo.Pedidos ADD ParaLlevar BIT NOT NULL CONSTRAINT DF_Pedidos_ParaLlevar DEFAULT 0;
+    EXEC(N'UPDATE dbo.Pedidos SET ParaLlevar = 1 WHERE MesaId IS NULL;');
+END
+GO
+
 -- Actualización de bases anteriores: columna LiberadaEn. Se marca como "liberada ahora"
 -- para que los pedidos viejos ya entregados no dejen todas las mesas ocupadas.
 IF COL_LENGTH('dbo.Mesas', 'LiberadaEn') IS NULL

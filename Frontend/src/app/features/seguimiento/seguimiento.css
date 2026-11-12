@@ -119,3 +119,4 @@
 .listo__titulo { font-family: var(--fuente-titulo); font-size: var(--titulo-2); font-weight: 600; }
 @keyframes aparecer { from { transform: scale(0.9); opacity: 0; } }
 .listo .boton { display: flex; align-items: center; justify-content: center; text-align: center; }
+.etiqueta-llevar { align-self: flex-start; padding: var(--espacio-1) var(--espacio-3); border-radius: var(--radio-pildora); background: var(--vainilla); font-weight: 700; font-size: var(--texto-pequeno); }

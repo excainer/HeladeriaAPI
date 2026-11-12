@@ -167,15 +167,16 @@ describe('Preparacion', () => {
     expect(el.querySelector('[role=alert]')!.textContent).toContain('ya empezó');
   });
 
-  it('muestra "Para llevar" y quién registró el pedido', async () => {
+  it('muestra "Mostrador", la etiqueta de para llevar y quién registró el pedido', async () => {
     const f = await crear();
     await vi.advanceTimersByTimeAsync(5000);
-    http.expectOne('/api/Pedidos').flush([...pedidos, { pedidoId: 20, mesaId: null, fecha: hace(0), estado: 'Pendiente', total: 7000, registradoPorId: 7, registradoPor: 'Juan Silva' }]);
+    http.expectOne('/api/Pedidos').flush([...pedidos, { pedidoId: 20, mesaId: null, fecha: hace(0), estado: 'Pendiente', total: 7000, paraLlevar: true, registradoPorId: 7, registradoPor: 'Juan Silva' }]);
     await vi.advanceTimersByTimeAsync(0);
     http.expectOne('/api/Pedidos/20/detalles').flush([]);
     await asentar();
     const tarjeta = Array.from<HTMLElement>(f.nativeElement.querySelectorAll('.pedido')).find((e) => e.textContent!.includes('Pedido 20'))!;
-    expect(tarjeta.querySelector('.pedido__mesa')!.textContent).toBe('Para llevar');
+    expect(tarjeta.querySelector('.pedido__mesa')!.textContent).toContain('Mostrador');
+    expect(tarjeta.querySelector('.llevar')!.textContent).toContain('Para llevar');
     expect(tarjeta.textContent).toContain('por Juan Silva');
   });
 });

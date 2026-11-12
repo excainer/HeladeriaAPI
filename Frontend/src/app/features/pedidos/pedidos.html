@@ -23,7 +23,7 @@
         Mesa
         <select (change)="elegirMesa(selectorMesa.value)" #selectorMesa>
           <option value="">Todas</option>
-          <option value="llevar">Para llevar</option>
+          <option value="llevar">🥡 Para llevar</option>
           @for (m of mesas(); track m.mesaId) {
             <option [value]="m.mesaId">Mesa {{ m.numero }}</option>
           }
@@ -38,7 +38,7 @@
         <li class="pedido">
           <div class="pedido__fila">
             <strong>Pedido {{ p.pedidoId }}</strong>
-            <span>{{ etiquetaMesa(p.mesaId) }}</span>
+            <span>{{ etiquetaMesa(p.mesaId) }}@if (p.paraLlevar) { · 🥡 Para llevar}</span>
             <span class="origen">{{ p.registradoPor ? 'Registrado por ' + p.registradoPor : 'Desde la mesa' }}</span>
             <span>{{ p.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
             <app-estado [valor]="p.estado" />

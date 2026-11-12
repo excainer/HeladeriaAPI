@@ -7,6 +7,9 @@
     <p role="status">Buscando tu pedido…</p>
   } @else if (pedido(); as p) {
     <h1>Tu pedido #{{ p.pedidoId }}</h1>
+    @if (p.paraLlevar) {
+      <p class="etiqueta-llevar">🥡 Para llevar</p>
+    }
 
     @if (aviso(); as tipo) {
       <div class="listo" role="alert">

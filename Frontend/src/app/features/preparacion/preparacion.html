@@ -35,7 +35,7 @@
           @for (p of col.pedidos; track p.pedidoId) {
             <article class="pedido" [class.pedido--nuevo]="resaltados().has(p.pedidoId)">
               <div class="pedido__cabecera">
-                <strong class="pedido__mesa">{{ mesa(p) }}</strong>
+                <strong class="pedido__mesa">{{ mesa(p) }}@if (p.paraLlevar) {<span class="llevar">🥡 Para llevar</span>}</strong>
                 <span>Pedido {{ p.pedidoId }} · {{ hace(p) }}@if (p.registradoPor) {<br />por {{ p.registradoPor }}}</span>
               </div>
               @for (d of items(p); track d.detallePedidoId) {

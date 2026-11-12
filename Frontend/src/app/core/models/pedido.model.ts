@@ -7,6 +7,8 @@ export interface Pedido {
   fecha: string;
   estado: EstadoPedido;
   total: number;
+  /** Se empaca para llevar (siempre true en pedidos de mostrador, sin mesa). */
+  paraLlevar?: boolean;
   /** Usuario del personal que lo registró; null si lo hizo el cliente desde la mesa. */
   registradoPorId?: number | null;
   registradoPor?: string | null;

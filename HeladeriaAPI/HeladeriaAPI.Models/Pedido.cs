@@ -28,6 +28,11 @@ namespace HeladeriaAPI.Models
         public int? RegistradoPorId { get; set; }
 
         /// <summary>
+        /// Se empaca para llevar. Siempre es true si no tiene mesa (pedido de mostrador).
+        /// </summary>
+        public bool ParaLlevar { get; set; }
+
+        /// <summary>
         /// Nombre de quien lo registró (se calcula con la tabla Usuarios; no es una columna).
         /// </summary>
         [Computed]

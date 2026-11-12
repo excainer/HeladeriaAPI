@@ -184,9 +184,9 @@ export class Preparacion {
     });
   }
 
-  /** "Mesa 3" o "Para llevar". */
+  /** "Mesa 3" o "Mostrador" (pedido sin mesa registrado por el personal). */
   protected mesa(p: Pedido): string {
-    return p.mesaId === null ? 'Para llevar' : `Mesa ${this.mesas().get(p.mesaId) ?? p.mesaId}`;
+    return p.mesaId === null ? 'Mostrador' : `Mesa ${this.mesas().get(p.mesaId) ?? p.mesaId}`;
   }
 
   protected items(p: Pedido): DetallePedido[] {

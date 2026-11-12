@@ -174,4 +174,11 @@ describe('Seguimiento', () => {
     expect(f.nativeElement.querySelector('.listo').textContent).toContain('¡Tu pedido está listo!');
     expect(sessionStorage.getItem('heladapp.pedido.12.visto')).toBe('Listo');
   });
+
+  it('muestra la etiqueta "Para llevar"', async () => {
+    const f = await crear();
+    http.expectOne('/api/Pedidos/12').flush({ ...pedido('Pendiente'), paraLlevar: true });
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(f.nativeElement.querySelector('.etiqueta-llevar').textContent).toContain('Para llevar');
+  });
 });

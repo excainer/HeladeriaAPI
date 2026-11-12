@@ -1062,6 +1062,9 @@ components:
           items:
             $ref: '#/components/schemas/DetalleSolicitud'
           description: Ítems del pedido (mínimo uno).
+        paraLlevar:
+          type: boolean
+          description: 'El cliente lo quiere para llevar (se empaca). Por defecto, para comer en la mesa.'
       additionalProperties: false
       description: Datos para crear un pedido.
     CrearUsuarioRequest:
@@ -1223,6 +1226,8 @@ components:
           type: integer
           format: int32
           nullable: true
+        paraLlevar:
+          type: boolean
         registradoPor:
           type: string
           nullable: true
@@ -1336,9 +1341,12 @@ components:
           maximum: 2147483647
           minimum: 1
           type: integer
-          description: 'Mesa del pedido, o null si es para llevar.'
+          description: 'Mesa del pedido, o null si es de mostrador (siempre para llevar).'
           format: int32
           nullable: true
+        paraLlevar:
+          type: boolean
+          description: Para llevar aunque tenga mesa. Se ignora (es true) si no tiene mesa.
         detalles:
           minItems: 1
           type: array

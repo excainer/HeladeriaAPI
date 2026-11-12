@@ -16,10 +16,14 @@ export interface NuevoDetalle {
 export interface NuevoPedido {
   mesaId: number;
   detalles: NuevoDetalle[];
+  /** Para llevar (se empaca). Por defecto, para comer en la mesa. */
+  paraLlevar?: boolean;
 }
 
 /** Cuerpo de POST /api/Pedidos/personal: la mesa es opcional (null = para llevar). */
 export interface PedidoDelPersonal {
   mesaId: number | null;
   detalles: NuevoDetalle[];
+  /** Para llevar aunque tenga mesa (sin mesa siempre lo es). */
+  paraLlevar: boolean;
 }

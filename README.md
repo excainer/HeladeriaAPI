@@ -186,6 +186,7 @@ Seguridad:
 - **Transacción:** el pedido y todos sus detalles se guardan juntos; si algo falla no queda nada a medias.
 - **Estados:** `Pendiente` → `En Preparacion` → `Listo` → `Entregado`. Solo se puede avanzar al siguiente; retroceder o saltar un paso responde `409`.
 - **Pedidos del personal:** empleados y administradores pueden registrar pedidos de clientes que piden en el mostrador o al mesero, para una mesa o **para llevar**. Se aplican las mismas reglas (precios del catálogo, tamaños, transacción) y queda guardado quién lo registró (`registradoPor`); los pedidos del cliente desde la mesa quedan sin ese dato.
+- **Para llevar:** el cliente elige al confirmar "Para comer aquí" o "Para llevar" (`paraLlevar`); el pedido sigue asociado a su mesa y la cocina ve la etiqueta 🥡 para empacarlo. El personal también puede marcarlo, y los pedidos de mostrador (sin mesa) siempre son para llevar.
 - **Cancelar:** el personal puede cancelar un pedido solo mientras está `Pendiente` (`POST /api/Pedidos/{id}/cancelar`). Un pedido cancelado no cuenta en las ventas, no ocupa la mesa y no se puede reactivar. Si dos personas cancelan y empiezan a preparar a la vez, solo una acción se aplica.
 - **Textos:** `sabores` y `toppings` admiten hasta 200 caracteres y `observaciones` hasta 300.
 

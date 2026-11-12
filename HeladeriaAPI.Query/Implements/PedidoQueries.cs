@@ -23,7 +23,7 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<IEnumerable<Pedido>> ObtenerTodosAsync()
         {
             const string sql = @"
-                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.ParaLlevar, p.RegistradoPorId, u.Nombre AS RegistradoPor
                 FROM Pedidos p
                 LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
                 ORDER BY p.Fecha DESC;";
@@ -37,7 +37,7 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<Pedido?> ObtenerPorIdAsync(int id)
         {
             const string sql = @"
-                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.ParaLlevar, p.RegistradoPorId, u.Nombre AS RegistradoPor
                 FROM Pedidos p
                 LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
                 WHERE p.PedidoId = @Id;";
@@ -52,7 +52,7 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<IEnumerable<Pedido>> ObtenerPorEstadoAsync(string estado)
         {
             const string sql = @"
-                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.ParaLlevar, p.RegistradoPorId, u.Nombre AS RegistradoPor
                 FROM Pedidos p
                 LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
                 WHERE p.Estado = @Estado
@@ -67,7 +67,7 @@ namespace HeladeriaAPI.Query.Implements
         public async Task<IEnumerable<Pedido>> ObtenerPorMesaAsync(int mesaId)
         {
             const string sql = @"
-                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.RegistradoPorId, u.Nombre AS RegistradoPor
+                SELECT p.PedidoId, p.MesaId, p.Fecha, p.Estado, p.Total, p.ParaLlevar, p.RegistradoPorId, u.Nombre AS RegistradoPor
                 FROM Pedidos p
                 LEFT JOIN Usuarios u ON u.UsuarioId = p.RegistradoPorId
                 WHERE p.MesaId = @MesaId

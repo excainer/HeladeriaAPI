@@ -15,12 +15,18 @@
       <label class="campo">
         ¿Para dónde es?
         <select #campoMesa (change)="mesaElegida.set(campoMesa.value)">
-          <option value="" [selected]="mesaElegida() === ''">Para llevar (mostrador)</option>
+          <option value="" [selected]="mesaElegida() === ''">Mostrador (para llevar)</option>
           @for (m of mesas(); track m.mesaId) {
             <option [value]="m.mesaId" [selected]="mesaElegida() === '' + m.mesaId">Mesa {{ m.numero }}</option>
           }
         </select>
       </label>
+      @if (mesaElegida() !== '') {
+        <label class="casilla">
+          <input #campoLlevar type="checkbox" [checked]="paraLlevar()" (change)="paraLlevar.set(campoLlevar.checked)" />
+          🥡 Para llevar
+        </label>
+      }
 
       @if (registrado(); as r) {
         <div class="mensaje-exito" role="status">

@@ -41,6 +41,14 @@
       }
     </ul>
 
+    <fieldset class="modalidad">
+      <legend>¿Cómo lo quieres?</legend>
+      <div class="opciones">
+        <button type="button" class="chip" [attr.aria-pressed]="!paraLlevar()" (click)="paraLlevar.set(false)">🍽️ Para comer aquí</button>
+        <button type="button" class="chip" [attr.aria-pressed]="paraLlevar()" (click)="paraLlevar.set(true)">🥡 Para llevar</button>
+      </div>
+    </fieldset>
+
     <p class="total">
       <span>Total</span>
       <strong>{{ carrito.total() | pesos }}</strong>
