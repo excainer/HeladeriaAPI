@@ -1,26 +1,42 @@
 <main class="login">
-  <form class="tarjeta" (submit)="$event.preventDefault(); entrar()" aria-labelledby="titulo-login">
-    <img class="logo" src="logo.png" alt="" width="96" height="96" />
-    <h1 id="titulo-login">Ingreso del personal</h1>
-    <p class="lema">HeladApp · cocina y administración</p>
+  @if (revisando()) {
+    <p class="tarjeta" role="status">Revisando la sesión…</p>
+  } @else if (sesionAbierta(); as u) {
+    <!-- Ya hay una sesión en este navegador: se pregunta antes de entrar (protege tablets compartidas). -->
+    <section class="tarjeta" aria-labelledby="titulo-sesion">
+      <img class="logo" src="logo.png" alt="" width="96" height="96" />
+      <h1 id="titulo-sesion">Ya hay una sesión abierta</h1>
+      <p class="lema">En este navegador está conectado <strong>{{ u.nombre }}</strong> ({{ u.rol }}).</p>
+      <button type="button" class="boton" (click)="continuar()">Continuar como {{ u.nombre }}</button>
+      <button type="button" class="boton boton--secundario" [disabled]="cerrando()" (click)="otraCuenta()">
+        {{ cerrando() ? 'Cerrando sesión…' : 'Entrar con otra cuenta' }}
+      </button>
+      <a class="cliente" routerLink="/">¿Eres cliente? Haz tu pedido sin registrarte</a>
+    </section>
+  } @else {
+    <form class="tarjeta" (submit)="$event.preventDefault(); entrar()" aria-labelledby="titulo-login">
+      <img class="logo" src="logo.png" alt="" width="96" height="96" />
+      <h1 id="titulo-login">Ingreso del personal</h1>
+      <p class="lema">HeladApp · cocina y administración</p>
 
-    <label class="campo">
-      Usuario
-      <input #campoUsuario type="text" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false"
-             maxlength="50" required [value]="usuario()" (input)="usuario.set(campoUsuario.value)" />
-    </label>
-    <label class="campo">
-      Contraseña
-      <input #campoClave type="password" name="clave" autocomplete="current-password"
-             maxlength="200" required [value]="clave()" (input)="clave.set(campoClave.value)" />
-    </label>
+      <label class="campo">
+        Usuario
+        <input #campoUsuario type="text" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false"
+               maxlength="50" required [value]="usuario()" (input)="usuario.set(campoUsuario.value)" />
+      </label>
+      <label class="campo">
+        Contraseña
+        <input #campoClave type="password" name="clave" autocomplete="current-password"
+               maxlength="200" required [value]="clave()" (input)="clave.set(campoClave.value)" />
+      </label>
 
-    @if (error()) {
-      <p class="mensaje-error" role="alert">{{ error() }}</p>
-    }
+      @if (error()) {
+        <p class="mensaje-error" role="alert">{{ error() }}</p>
+      }
 
-    <button type="submit" class="boton" [disabled]="entrando()">{{ entrando() ? 'Entrando…' : 'Entrar' }}</button>
+      <button type="submit" class="boton" [disabled]="entrando()">{{ entrando() ? 'Entrando…' : 'Entrar' }}</button>
 
-    <a class="cliente" routerLink="/">¿Eres cliente? Haz tu pedido sin registrarte</a>
-  </form>
+      <a class="cliente" routerLink="/">¿Eres cliente? Haz tu pedido sin registrarte</a>
+    </form>
+  }
 </main>

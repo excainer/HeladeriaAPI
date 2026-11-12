@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Usuario } from '../../core/models/usuario.model';
 import { AuthService } from '../../core/services/auth';
 import { mensajeError } from '../../core/utils/errores';
 
@@ -20,6 +21,36 @@ export class Login {
   protected readonly clave = signal('');
   protected readonly entrando = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  // Sesión que ya existía en este navegador (por ejemplo, abierta en otra pestaña).
+  protected readonly revisando = signal(true);
+  protected readonly sesionAbierta = signal<Usuario | null>(null);
+  protected readonly cerrando = signal(false);
+
+  constructor() {
+    this.auth.verificar().subscribe({
+      next: (u) => {
+        this.sesionAbierta.set(u);
+        this.revisando.set(false);
+      },
+      // Si la API no responde se muestra el formulario; el error aparecerá al intentar entrar.
+      error: () => this.revisando.set(false),
+    });
+  }
+
+  protected continuar() {
+    this.router.navigateByUrl(this.destino());
+  }
+
+  /** Cierra la sesión abierta y muestra el formulario para entrar con otro usuario. */
+  protected otraCuenta() {
+    if (this.cerrando()) return;
+    this.cerrando.set(true);
+    this.auth.cerrarSesion().subscribe(() => {
+      this.cerrando.set(false);
+      this.sesionAbierta.set(null);
+    });
+  }
 
   protected entrar() {
     if (this.entrando()) return;

@@ -9,7 +9,10 @@ import { Login } from './login';
 describe('Login', () => {
   let http: HttpTestingController;
 
-  async function crear(volver: string | null = null) {
+  const juan = { usuarioId: 1, nombreUsuario: 'excainer', nombre: 'Juan Gallo', rol: 'Administrador' as const, activo: true };
+
+  /** sesion: usuario que ya tiene la sesión abierta en el navegador, o null si no hay. */
+  async function crear(volver: string | null = null, sesion: typeof juan | null = null) {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -20,6 +23,9 @@ describe('Login', () => {
     });
     http = TestBed.inject(HttpTestingController);
     const f = TestBed.createComponent(Login);
+    const yo = http.expectOne('/api/Auth/yo');
+    if (sesion) yo.flush(sesion);
+    else yo.flush(null, { status: 401, statusText: 'Unauthorized' });
     await f.whenStable();
     return f;
   }
@@ -93,4 +99,26 @@ describe('Login', () => {
     const f = await crear();
     expect(f.nativeElement.querySelector('a.cliente').getAttribute('href')).toBe('/');
   });
+
+  it('si ya hay una sesión abierta, pregunta en vez de entrar directo', async () => {
+    const f = await crear('/personal/pedidos', juan);
+    const el: HTMLElement = f.nativeElement;
+    expect(el.querySelector('form')).toBeNull();
+    expect(el.textContent).toContain('Ya hay una sesión abierta');
+    const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const continuar = Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.includes('Continuar como Juan Gallo'))!;
+    continuar.click();
+    expect(navegar).toHaveBeenCalledWith('/personal/pedidos');
+  });
+
+  it('"Entrar con otra cuenta" cierra la sesión y muestra el formulario', async () => {
+    const f = await crear(null, juan);
+    const el: HTMLElement = f.nativeElement;
+    Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.includes('otra cuenta'))!.click();
+    http.expectOne('/api/Auth/logout').flush(null, { status: 204, statusText: 'No Content' });
+    await f.whenStable();
+    expect(TestBed.inject(AuthService).usuario()).toBeNull();
+    expect(el.querySelector('form input[autocomplete=username]')).toBeTruthy();
+  });
 });
+
