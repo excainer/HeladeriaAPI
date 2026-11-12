@@ -511,6 +511,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
+  '/api/Pedidos/{id}/cancelar':
+    post:
+      tags:
+        - Pedidos
+      summary: "Cancela un pedido. Solo se puede mientras está \"Pendiente\" (antes de que la cocina empiece a prepararlo).\r\nUn pedido cancelado no cuenta en las ventas ni deja la mesa ocupada."
+      parameters:
+        - name: id
+          in: path
+          description: Identificador del pedido.
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '204':
+          description: Pedido cancelado.
+        '401':
+          description: No hay sesión del personal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '404':
+          description: No existe un pedido con ese id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: El pedido ya no está pendiente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
   /api/Productos:
     get:
       tags:

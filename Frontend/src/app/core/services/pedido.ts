@@ -40,6 +40,11 @@ export class PedidoService {
   }
 
   /** Cambia el estado. El backend responde 204 sin contenido. */
+  /** Cancela un pedido pendiente (personal). Falla con 409 si la cocina ya empezó. */
+  cancelar(pedidoId: number) {
+    return this.api.post<void>(`${this.endpoint}/${pedidoId}/cancelar`, {});
+  }
+
   actualizarEstado(pedidoId: number, estado: EstadoPedido) {
     return this.api.put<void>(`${this.endpoint}/${pedidoId}/estado`, { estado });
   }

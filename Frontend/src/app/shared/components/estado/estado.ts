@@ -10,6 +10,7 @@ import { EstadoPedido, etiquetaEstado } from '../../../core/models/estado-pedido
     .Pendiente { background: var(--estado-pendiente); border-color: transparent; }
     .EnPreparacion { background: var(--estado-preparacion); border-color: transparent; }
     .Listo { background: var(--estado-listo); border-color: transparent; }
+    .Cancelado { background: var(--blanco); border-style: dashed; text-decoration: line-through; opacity: 0.75; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

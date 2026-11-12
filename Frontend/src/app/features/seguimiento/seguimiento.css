@@ -103,3 +103,19 @@
 }
 
 .boton { display: inline-flex; align-items: center; text-decoration: none; }
+
+.estado--cancelado { background: var(--rosa-suave); }
+.listo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  padding: var(--espacio-5);
+  border: 3px solid var(--tinta);
+  border-radius: var(--radio-grande);
+  background: var(--estado-listo);
+  text-align: center;
+  animation: aparecer 0.4s ease-out;
+}
+.listo__titulo { font-family: var(--fuente-titulo); font-size: var(--titulo-2); font-weight: 600; }
+@keyframes aparecer { from { transform: scale(0.9); opacity: 0; } }
+.listo .boton { display: flex; align-items: center; justify-content: center; text-align: center; }

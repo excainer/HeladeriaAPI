@@ -10,7 +10,7 @@ namespace HeladeriaAPI.Query.Implements
     /// <summary>
     /// Consultas sobre las mesas. El estado se calcula a partir de los pedidos:
     /// una mesa está "Ocupada" desde su primer pedido posterior a la última liberación
-    /// (o mientras tenga pedidos sin entregar) hasta que el personal la libera.
+    /// (o mientras tenga pedidos sin entregar) hasta que el personal la libera. Los pedidos cancelados no cuentan.
     /// </summary>
     public class MesaQueries : IMesaQueries
     {
@@ -22,10 +22,11 @@ namespace HeladeriaAPI.Query.Implements
             FROM Mesas m
             OUTER APPLY (SELECT COUNT(*) AS Activos
                          FROM Pedidos p
-                         WHERE p.MesaId = m.MesaId AND p.Estado <> N'Entregado') a
+                         WHERE p.MesaId = m.MesaId AND p.Estado NOT IN (N'Entregado', N'Cancelado')) a
             OUTER APPLY (SELECT COUNT(*) AS DesdeLiberacion
                          FROM Pedidos p
-                         WHERE p.MesaId = m.MesaId AND (m.LiberadaEn IS NULL OR p.Fecha > m.LiberadaEn)) d";
+                         WHERE p.MesaId = m.MesaId AND p.Estado <> N'Cancelado'
+                           AND (m.LiberadaEn IS NULL OR p.Fecha > m.LiberadaEn)) d";
 
         private readonly IDbConnection _conexion;
 

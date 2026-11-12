@@ -41,7 +41,7 @@ const enviar = (res, status, cuerpo) => {
 // Igual que la API real: la mesa está ocupada desde su primer pedido posterior a la última
 // liberación (o mientras tenga pedidos sin entregar) hasta que el personal la libera.
 const conOcupacion = (m) => {
-  const deLaMesa = pedidos.filter((p) => p.mesaId === m.mesaId);
+  const deLaMesa = pedidos.filter((p) => p.mesaId === m.mesaId && p.estado !== 'Cancelado');
   const pedidosActivos = deLaMesa.filter((p) => p.estado !== 'Entregado').length;
   const pedidosDesdeLiberacion = deLaMesa.filter((p) => !m.liberadaEn || p.fecha > m.liberadaEn).length;
   const ocupada = pedidosActivos > 0 || pedidosDesdeLiberacion > 0;
@@ -151,7 +151,7 @@ createServer((req, res) => {
 
     // Igual que la API real: el personal necesita sesión y el catálogo solo lo edita un administrador.
     const listaDePedidos = recurso === 'pedidos' && req.method === 'GET' && (!a || a === 'estado' || a === 'mesa');
-    const cambioDeEstado = recurso === 'pedidos' && req.method === 'PUT';
+    const cambioDeEstado = recurso === 'pedidos' && (req.method === 'PUT' || (req.method === 'POST' && b === 'cancelar'));
     const edicionCatalogo = ['categorias', 'productos', 'tamanos'].includes(recurso) && ['POST', 'PUT'].includes(req.method);
     if ((listaDePedidos || cambioDeEstado || edicionCatalogo) && !yo) return sinSesion();
     if (edicionCatalogo && !esAdmin) return sinPermiso();
@@ -255,11 +255,21 @@ createServer((req, res) => {
       return enviar(res, 201, pedido);
     }
 
+    if (recurso === 'pedidos' && b === 'cancelar' && req.method === 'POST') {
+      const pedido = pedidos.find((x) => x.pedidoId === Number(a));
+      if (!pedido) return enviar(res, 404);
+      if (pedido.estado === 'Cancelado') return enviar(res, 409, 'El pedido ya estaba cancelado.');
+      if (pedido.estado !== 'Pendiente') return enviar(res, 409, 'Solo se pueden cancelar pedidos pendientes: la cocina ya empezó a prepararlo.');
+      pedido.estado = 'Cancelado';
+      return enviar(res, 204);
+    }
+
     if (recurso === 'pedidos' && b === 'estado' && req.method === 'PUT') {
       const estado = ESTADOS.find((e) => e.toLowerCase() === String(datos.estado ?? '').toLowerCase());
       if (!estado) return enviar(res, 400, `Estado no válido. Valores permitidos: ${ESTADOS.join(', ')}.`);
       const pedido = pedidos.find((x) => x.pedidoId === Number(a));
       if (!pedido) return enviar(res, 404);
+      if (pedido.estado === 'Cancelado') return enviar(res, 409, 'El pedido fue cancelado y no se puede cambiar.');
       // Solo se avanza al siguiente estado.
       const actual = ESTADOS.indexOf(pedido.estado);
       if (ESTADOS.indexOf(estado) !== actual + 1) {

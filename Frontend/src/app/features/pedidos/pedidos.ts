@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
-import { ESTADOS_PEDIDO, EstadoPedido, etiquetaEstado } from '../../core/models/estado-pedido.model';
+import { EstadoPedido, TODOS_LOS_ESTADOS, etiquetaEstado } from '../../core/models/estado-pedido.model';
 import { DetallePedido } from '../../core/models/detalle-pedido.model';
 import { Mesa } from '../../core/models/mesa.model';
 import { Pedido } from '../../core/models/pedido.model';
@@ -25,7 +25,7 @@ export class Pedidos {
   private readonly mesaService = inject(MesaService);
   private readonly catalogo = inject(CatalogoService);
 
-  protected readonly estados = ESTADOS_PEDIDO.map((valor) => ({ valor, texto: etiquetaEstado(valor) }));
+  protected readonly estados = TODOS_LOS_ESTADOS.map((valor) => ({ valor, texto: etiquetaEstado(valor) }));
 
   protected readonly pedidos = signal<Pedido[]>([]);
   protected readonly mesas = signal<Mesa[]>([]);

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { ESTADOS_PEDIDO, etiquetaEstado } from '../../core/models/estado-pedido.model';
+import { TODOS_LOS_ESTADOS, etiquetaEstado } from '../../core/models/estado-pedido.model';
 import { Pedido } from '../../core/models/pedido.model';
 import { Producto } from '../../core/models/producto.model';
 import { MesaService } from '../../core/services/mesa';
@@ -34,7 +34,7 @@ export class Dashboard {
   protected readonly ventas = computed(() =>
     this.pedidos().filter((p) => p.estado === 'Entregado').reduce((suma, p) => suma + p.total, 0));
   protected readonly porEstado = computed(() =>
-    ESTADOS_PEDIDO.map((estado) => ({
+    TODOS_LOS_ESTADOS.map((estado) => ({
       estado,
       texto: etiquetaEstado(estado),
       cantidad: this.pedidos().filter((p) => p.estado === estado).length,

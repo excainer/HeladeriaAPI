@@ -8,7 +8,15 @@
   } @else if (pedido(); as p) {
     <h1>Tu pedido #{{ p.pedidoId }}</h1>
 
-    <div class="estado" [class.estado--listo]="p.estado === 'Listo'" role="status" aria-live="polite">
+    @if (avisoListo()) {
+      <div class="listo" role="alert">
+        <p class="listo__titulo">🍨 ¡Tu pedido está listo!</p>
+        <p>Ya puedes recogerlo o en un momento te lo llevamos a la mesa.</p>
+        <button type="button" class="boton" (click)="cerrarAviso()">¡Entendido!</button>
+      </div>
+    }
+
+    <div class="estado" [class.estado--listo]="p.estado === 'Listo'" [class.estado--cancelado]="cancelado()" role="status" aria-live="polite">
       <p class="estado__mensaje">{{ mensaje() }}</p>
     </div>
 
@@ -16,6 +24,7 @@
       <p class="aviso" role="alert">No pudimos actualizar el estado. Lo intentamos de nuevo en unos segundos.</p>
     }
 
+    @if (!cancelado()) {
     <ol class="pasos" aria-label="Avance del pedido">
       @for (paso of pasos; track paso.valor; let i = $index) {
         <li class="paso" [class.paso--hecho]="i <= posicion()" [attr.aria-current]="i === posicion() ? 'step' : null">
@@ -24,6 +33,7 @@
         </li>
       }
     </ol>
+    }
 
     <h2>Lo que pediste</h2>
     <ul class="items">

@@ -3,6 +3,8 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Preparacion } from './preparacion';
 import { errorInterceptor } from '../../core/interceptors/error';
+import { Title } from '@angular/platform-browser';
+import { SonidoService } from '../../core/services/sonido';
 
 const hace = (min: number) => new Date(Date.now() - min * 60000).toISOString();
 const pedidos = [
@@ -100,5 +102,68 @@ describe('Preparacion', () => {
     http.expectOne('/api/Pedidos').flush(pedidos);
     await asentar();
     expect(f.nativeElement.querySelector('[role=alert]')).toBeNull();
+  });
+
+  it('suena y avisa en el título cuando llega un pedido nuevo (no al abrir)', async () => {
+    const sonido = TestBed.inject(SonidoService);
+    const ding = vi.spyOn(sonido, 'nuevoPedido');
+    const f = await crear();
+    expect(ding).not.toHaveBeenCalled(); // los pedidos que ya estaban no suenan
+
+    await vi.advanceTimersByTimeAsync(5000);
+    http.expectOne('/api/Pedidos').flush([...pedidos, { pedidoId: 14, mesaId: 1, fecha: hace(0), estado: 'Pendiente', total: 5000 }]);
+    await vi.advanceTimersByTimeAsync(0);
+    http.expectOne('/api/Pedidos/14/detalles').flush([]);
+    await asentar();
+
+    expect(ding).toHaveBeenCalledTimes(1);
+    expect(f.nativeElement.querySelector('.nuevos').textContent).toContain('Llegó 1 pedido nuevo');
+    expect(f.nativeElement.querySelectorAll('.pedido--nuevo').length).toBe(1);
+    expect(TestBed.inject(Title).getTitle()).toContain('🔔 (1)');
+
+    // Al tocar la pantalla se da por visto.
+    document.dispatchEvent(new Event('pointerdown'));
+    await asentar();
+    expect(f.nativeElement.querySelector('.nuevos')).toBeNull();
+    expect(TestBed.inject(Title).getTitle()).toBe('Cocina · HeladApp');
+  });
+
+  it('el botón de sonido permite silenciar', async () => {
+    const f = await crear();
+    const sonido = TestBed.inject(SonidoService);
+    const antes = sonido.silenciado();
+    (f.nativeElement.querySelector('.sonido') as HTMLButtonElement).click();
+    expect(sonido.silenciado()).toBe(!antes);
+    sonido.alternarSilencio(); // deja el estado como estaba para las demás pruebas
+  });
+
+  it('cancela un pedido pendiente después de confirmar', async () => {
+    const f = await crear();
+    const el: HTMLElement = f.nativeElement;
+    const pendientes = el.querySelectorAll('.columna')[0];
+    expect(el.querySelectorAll('.columna')[1].querySelector('.cancelar')).toBeNull(); // en preparación no se cancela
+    (pendientes.querySelector('.cancelar') as HTMLButtonElement).click();
+    await asentar();
+    expect(el.querySelector('.confirmar')!.textContent).toContain('¿Cancelar el pedido 12 de la mesa 3?');
+    const si = Array.from(el.querySelectorAll<HTMLButtonElement>('.confirmar button')).find((b) => b.textContent!.includes('Sí'))!;
+    si.click();
+    const req = http.expectOne('/api/Pedidos/12/cancelar');
+    expect(req.request.method).toBe('POST');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    await vi.advanceTimersByTimeAsync(0);
+    http.expectOne('/api/Pedidos').flush(pedidos.map((p) => (p.pedidoId === 12 ? { ...p, estado: 'Cancelado' } : p)));
+    await asentar();
+    expect(el.textContent).not.toContain('Pedido 12');
+  });
+
+  it('si la cocina ya empezó, muestra por qué no se pudo cancelar', async () => {
+    const f = await crear();
+    const el: HTMLElement = f.nativeElement;
+    (el.querySelector('.cancelar') as HTMLButtonElement).click();
+    await asentar();
+    Array.from(el.querySelectorAll<HTMLButtonElement>('.confirmar button')).find((b) => b.textContent!.includes('Sí'))!.click();
+    http.expectOne('/api/Pedidos/12/cancelar').flush('Solo se pueden cancelar pedidos pendientes: la cocina ya empezó a prepararlo.', { status: 409, statusText: 'Conflict' });
+    await asentar();
+    expect(el.querySelector('[role=alert]')!.textContent).toContain('ya empezó');
   });
 });

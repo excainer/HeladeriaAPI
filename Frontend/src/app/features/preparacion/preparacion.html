@@ -5,7 +5,17 @@
       Se actualiza cada 5 segundos
       @if (ultimaActualizacion(); as u) { · última vez {{ u.toLocaleTimeString('es-CO') }} }
     </p>
+    <button type="button" class="boton boton--secundario boton--chico sonido" [attr.aria-pressed]="!sonido.silenciado()" (click)="alternarSonido()">
+      {{ sonido.silenciado() ? '🔕 Sonido apagado' : '🔔 Sonido activado' }}
+    </button>
   </div>
+
+  @if (!sonido.habilitado() && !sonido.silenciado()) {
+    <p class="aviso-sonido" role="note">Toca cualquier parte de la pantalla para que suene un aviso cuando llegue un pedido nuevo.</p>
+  }
+  @if (sinVer() > 0) {
+    <p class="nuevos" role="status">🔔 {{ sinVer() === 1 ? 'Llegó 1 pedido nuevo' : 'Llegaron ' + sinVer() + ' pedidos nuevos' }}</p>
+  }
 
   @if (errorCarga()) {
     <p class="aviso" role="alert">No se pudo actualizar la lista. Se intentará de nuevo en unos segundos.</p>
@@ -23,7 +33,7 @@
           <h2><span>{{ col.titulo }}</span><span class="contador">{{ col.pedidos.length }}</span></h2>
 
           @for (p of col.pedidos; track p.pedidoId) {
-            <article class="pedido">
+            <article class="pedido" [class.pedido--nuevo]="resaltados().has(p.pedidoId)">
               <div class="pedido__cabecera">
                 <strong class="pedido__mesa">Mesa {{ mesa(p) }}</strong>
                 <span>Pedido {{ p.pedidoId }} · {{ hace(p) }}</span>
@@ -43,6 +53,19 @@
                 [disabled]="enCurso().has(p.pedidoId)"
                 (click)="avanzar(p)"
               >{{ col.accion }}</button>
+              @if (col.estado === 'Pendiente') {
+                @if (confirmando() === p.pedidoId) {
+                  <div class="confirmar" role="group" [attr.aria-label]="'Confirmar cancelación del pedido ' + p.pedidoId">
+                    <p>¿Cancelar el pedido {{ p.pedidoId }} de la mesa {{ mesa(p) }}?</p>
+                    <div class="acciones">
+                      <button type="button" class="boton boton--chico" [disabled]="enCurso().has(p.pedidoId)" (click)="cancelar(p)">Sí, cancelar</button>
+                      <button type="button" class="boton boton--secundario boton--chico" (click)="noCancelar()">No</button>
+                    </div>
+                  </div>
+                } @else {
+                  <button type="button" class="cancelar" [disabled]="enCurso().has(p.pedidoId)" (click)="pedirConfirmacion(p)">Cancelar pedido</button>
+                }
+              }
             </article>
           } @empty {
             <p class="vacio">Sin pedidos.</p>

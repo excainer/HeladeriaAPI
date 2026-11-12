@@ -28,7 +28,7 @@ namespace HeladeriaAPI.Models
         public DateTime Fecha { get; set; }
 
         /// <summary>
-        /// Estado del flujo de preparación (ej. Pendiente, En Preparacion, Listo, Entregado).
+        /// Estado del flujo de preparación (Pendiente, En Preparacion, Listo, Entregado) o Cancelado.
         /// </summary>
         public string Estado { get; set; } = string.Empty;
 

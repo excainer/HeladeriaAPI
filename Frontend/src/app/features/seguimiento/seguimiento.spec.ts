@@ -6,6 +6,8 @@ import { registerLocaleData } from '@angular/common';
 import localeEsCo from '@angular/common/locales/es-CO';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { Seguimiento } from './seguimiento';
+import { Title } from '@angular/platform-browser';
+import { SonidoService } from '../../core/services/sonido';
 import { MesaSesionService } from '../../core/services/mesa-sesion';
 
 registerLocaleData(localeEsCo);
@@ -85,5 +87,46 @@ describe('Seguimiento', () => {
     http.expectOne('/api/Pedidos/12').flush(pedido('Pendiente', 9));
     await vi.advanceTimersByTimeAsync(0); TestBed.tick();
     expect(f.nativeElement.textContent).toContain('No encontramos este pedido');
+  });
+
+  it('avisa con sonido, vibración y título cuando el pedido pasa a Listo', async () => {
+    const sonido = TestBed.inject(SonidoService);
+    const musica = vi.spyOn(sonido, 'pedidoListo');
+    const vibrar = vi.spyOn(sonido, 'vibrar');
+    const f = await crear();
+    http.expectOne('/api/Pedidos/12').flush(pedido('En Preparacion'));
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(musica).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(5000);
+    http.expectOne('/api/Pedidos/12').flush(pedido('Listo'));
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(musica).toHaveBeenCalledTimes(1);
+    expect(vibrar).toHaveBeenCalled();
+    expect(f.nativeElement.querySelector('.listo').textContent).toContain('¡Tu pedido está listo!');
+    expect(TestBed.inject(Title).getTitle()).toContain('listo');
+
+    (f.nativeElement.querySelector('.listo button') as HTMLButtonElement).click();
+    TestBed.tick();
+    expect(f.nativeElement.querySelector('.listo')).toBeNull();
+  });
+
+  it('no suena si el pedido ya estaba listo al abrir la página', async () => {
+    const musica = vi.spyOn(TestBed.inject(SonidoService), 'pedidoListo');
+    const f = await crear();
+    http.expectOne('/api/Pedidos/12').flush(pedido('Listo'));
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(musica).not.toHaveBeenCalled();
+    expect(f.nativeElement.querySelector('.listo')).toBeNull();
+  });
+
+  it('muestra un pedido cancelado y deja de consultar', async () => {
+    const f = await crear();
+    http.expectOne('/api/Pedidos/12').flush(pedido('Cancelado'));
+    await vi.advanceTimersByTimeAsync(0); TestBed.tick();
+    expect(f.nativeElement.textContent).toContain('Tu pedido fue cancelado');
+    expect(f.nativeElement.querySelector('.pasos')).toBeNull();
+    await vi.advanceTimersByTimeAsync(10000);
+    http.expectNone('/api/Pedidos/12');
   });
 });

@@ -173,6 +173,7 @@ Seguridad:
 | 🔑 | GET | `/api/Pedidos`, `/api/Pedidos/estado/{estado}`, `/api/Pedidos/mesa/{mesaId}` | Listas de pedidos para el personal |
 | 🔓 | POST | `/api/Pedidos` | Crea un pedido con sus detalles |
 | 🔑 | PUT | `/api/Pedidos/{id}/estado` | Avanza el estado del pedido |
+| 🔑 | POST | `/api/Pedidos/{id}/cancelar` | Cancela un pedido pendiente |
 
 ### Reglas de negocio
 
@@ -183,6 +184,7 @@ Seguridad:
 - **Mesas:** una mesa queda *Ocupada* desde su primer pedido y sigue así hasta que el personal presiona **Liberar mesa** (`POST /api/Mesas/{id}/liberar`, empleados y administradores). No se puede liberar con pedidos sin entregar (`409`). La respuesta incluye `pedidosActivos` y `puedeLiberarse`.
 - **Transacción:** el pedido y todos sus detalles se guardan juntos; si algo falla no queda nada a medias.
 - **Estados:** `Pendiente` → `En Preparacion` → `Listo` → `Entregado`. Solo se puede avanzar al siguiente; retroceder o saltar un paso responde `409`.
+- **Cancelar:** el personal puede cancelar un pedido solo mientras está `Pendiente` (`POST /api/Pedidos/{id}/cancelar`). Un pedido cancelado no cuenta en las ventas, no ocupa la mesa y no se puede reactivar. Si dos personas cancelan y empiezan a preparar a la vez, solo una acción se aplica.
 - **Textos:** `sabores` y `toppings` admiten hasta 200 caracteres y `observaciones` hasta 300.
 
 Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que no maneja tamaños):
@@ -201,8 +203,8 @@ Ejemplo de cuerpo para `POST /api/Pedidos` (un helado grande y un brownie, que n
 
 Aplicación Angular en la carpeta `Frontend`. Tiene dos zonas:
 
-- **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), elige tamaño, sabores y toppings, arma el pedido y sigue su estado en tiempo real.
-- **Personal** (`http://localhost:4200/personal`, con login): cocina (avanza los estados), historial de pedidos, resumen y, para administradores, **administración** de productos, categorías, tamaños y usuarios.
+- **Cliente** (`http://localhost:4200/`): elige su mesa (o entra por `/mesa/{numero}`, pensado para un código QR), elige tamaño, sabores y toppings, arma el pedido y sigue su estado en tiempo real. Cuando el pedido queda listo, el celular suena, vibra (Android) y muestra un aviso.
+- **Personal** (`http://localhost:4200/personal`, con login): cocina (avanza o cancela pedidos, y suena cuando llega uno nuevo; se puede silenciar), historial de pedidos, resumen y, para administradores, **administración** de productos, categorías, tamaños y usuarios.
 
 Con la API corriendo (paso 3):
 

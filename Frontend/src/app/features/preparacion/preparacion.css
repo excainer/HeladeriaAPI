@@ -74,3 +74,34 @@ h2 { display: flex; justify-content: space-between; align-items: center; }
 .pedido .boton { min-height: 52px; }
 
 .vacio { color: var(--tinta); font-size: var(--texto-pequeno); }
+
+.sonido { margin-left: auto; }
+.aviso-sonido { font-size: var(--texto-pequeno); }
+.nuevos {
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-chico);
+  background: var(--vainilla);
+  font-weight: 700;
+}
+.pedido--nuevo { outline: 4px solid var(--vainilla); animation: latido 1s ease-in-out 3; }
+@keyframes latido { 50% { transform: scale(1.02); } }
+.cancelar {
+  align-self: center;
+  min-height: var(--alto-tactil);
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font-size: var(--texto-pequeno);
+  font-weight: 600;
+  text-decoration: underline;
+}
+.confirmar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  padding: var(--espacio-3);
+  border-radius: var(--radio-chico);
+  background: var(--rosa-suave);
+  font-size: var(--texto-pequeno);
+  font-weight: 700;
+}

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Title } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, takeWhile } from 'rxjs';
@@ -8,6 +9,7 @@ import { Pedido } from '../../core/models/pedido.model';
 import { CatalogoService } from '../../core/services/catalogo';
 import { MesaSesionService } from '../../core/services/mesa-sesion';
 import { PedidoService } from '../../core/services/pedido';
+import { SonidoService } from '../../core/services/sonido';
 import { sondeo } from '../../core/utils/sondeo';
 import { Pesos } from '../../shared/pipes/pesos';
 
@@ -16,9 +18,18 @@ const MENSAJES: Record<EstadoPedido, string> = {
   'En Preparacion': 'Estamos preparando tu pedido.',
   Listo: '¡Tu pedido está listo!',
   Entregado: 'Tu pedido fue entregado. ¡Que lo disfrutes!',
+  Cancelado: 'Tu pedido fue cancelado. Si crees que es un error, avísale al personal.',
 };
 
-/** Seguimiento del pedido del cliente. Se actualiza solo cada 5 segundos hasta que se entrega. */
+const TITULO = 'Tu pedido · HeladApp';
+
+/** Estados finales: ya no hay nada más que esperar. */
+const FINALES: readonly EstadoPedido[] = ['Entregado', 'Cancelado'];
+
+/**
+ * Seguimiento del pedido del cliente. Se actualiza cada 5 segundos hasta que se entrega o se cancela.
+ * Cuando queda listo avisa con sonido, vibración (Android), título de la pestaña y un aviso grande.
+ */
 @Component({
   selector: 'app-seguimiento',
   imports: [Pesos, RouterLink],
@@ -31,6 +42,8 @@ export class Seguimiento {
   private readonly catalogo = inject(CatalogoService);
   private readonly sesion = inject(MesaSesionService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly sonido = inject(SonidoService);
+  private readonly titulo = inject(Title);
 
   protected readonly pedido = signal<Pedido | null>(null);
   protected readonly detalles = signal<DetallePedido[]>([]);
@@ -40,6 +53,9 @@ export class Seguimiento {
   protected readonly cargando = signal(true);
   protected readonly noEncontrado = signal(false);
   protected readonly errorConexion = signal(false);
+  /** Se muestra el aviso grande de "¡listo!" (solo si cambió a Listo mientras se miraba). */
+  protected readonly avisoListo = signal(false);
+  protected readonly cancelado = computed(() => this.pedido()?.estado === 'Cancelado');
 
   protected readonly pasos = ESTADOS_PEDIDO.map((valor) => ({ valor, texto: etiquetaEstado(valor) }));
   protected readonly posicion = computed(() => {
@@ -61,6 +77,21 @@ export class Seguimiento {
       return;
     }
     this.iniciar(id);
+    this.destroyRef.onDestroy(() => this.titulo.setTitle('HeladApp'));
+  }
+
+  protected cerrarAviso() {
+    this.avisoListo.set(false);
+    this.titulo.setTitle(TITULO);
+  }
+
+  /** Avisa solo cuando el pedido PASA a Listo (no si ya estaba listo al abrir la página). */
+  private avisarSiQuedoListo(anterior: Pedido | null, actual: Pedido) {
+    if (actual.estado !== 'Listo' || !anterior || anterior.estado === 'Listo') return;
+    this.sonido.pedidoListo();
+    this.sonido.vibrar();
+    this.avisoListo.set(true);
+    this.titulo.setTitle('✅ ¡Tu pedido está listo!');
   }
 
   /** "Helado de Vainilla (Grande)", o solo el nombre si no tiene tamaño. */
@@ -87,8 +118,8 @@ export class Seguimiento {
 
     sondeo(() => this.pedidos.obtenerPorId(id))
       .pipe(
-        // Cuando el pedido se entrega ya no hay nada más que esperar.
-        takeWhile((r) => !(r.ok && r.valor.estado === 'Entregado'), true),
+        // Cuando el pedido se entrega o se cancela ya no hay nada más que esperar.
+        takeWhile((r) => !(r.ok && FINALES.includes(r.valor.estado)), true),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((r) => {
@@ -101,6 +132,9 @@ export class Seguimiento {
             return;
           }
           this.errorConexion.set(false);
+          this.avisarSiQuedoListo(this.pedido(), r.valor);
+          if (r.valor.estado !== 'Listo') this.avisoListo.set(false);
+          if (!this.avisoListo()) this.titulo.setTitle(TITULO);
           this.pedido.set(r.valor);
         } else if ((r.error as { status?: number }).status === 404) {
           this.noEncontrado.set(true);

@@ -15,8 +15,12 @@ namespace HeladeriaAPI.Controllers
     [Produces("application/json")]
     public class PedidosController : ControllerBase
     {
+        /// <summary>Flujo normal de un pedido, en orden.</summary>
         private static readonly string[] EstadosValidos =
             { "Pendiente", "En Preparacion", "Listo", "Entregado" };
+
+        /// <summary>Estado final de un pedido anulado (fuera del flujo normal).</summary>
+        private const string EstadoCancelado = "Cancelado";
 
         private readonly IPedidoQueries _pedidoQueries;
         private readonly IMesaQueries _mesaQueries;
@@ -205,20 +209,58 @@ namespace HeladeriaAPI.Controllers
             var pedido = await _pedidoQueries.ObtenerPorIdAsync(id);
             if (pedido is null) return NotFound();
 
+            if (pedido.Estado == EstadoCancelado)
+                return Conflict("El pedido fue cancelado y no se puede cambiar.");
+
             var posicionActual = Array.IndexOf(EstadosValidos, pedido.Estado);
             var posicionNueva = Array.IndexOf(EstadosValidos, estado);
 
-            if (posicionNueva != posicionActual + 1)
+            if (posicionActual < 0 || posicionNueva != posicionActual + 1)
             {
                 var mensaje = posicionActual == EstadosValidos.Length - 1
                     ? "El pedido ya fue entregado y no se puede cambiar."
-                    : $"No se puede pasar de \"{pedido.Estado}\" a \"{estado}\". " +
-                      $"El siguiente estado es \"{EstadosValidos[posicionActual + 1]}\".";
+                    : posicionActual < 0
+                        ? $"El pedido está en un estado desconocido (\"{pedido.Estado}\")."
+                        : $"No se puede pasar de \"{pedido.Estado}\" a \"{estado}\". " +
+                          $"El siguiente estado es \"{EstadosValidos[posicionActual + 1]}\".";
                 return Conflict(mensaje);
             }
 
-            var actualizado = await _pedidoRepository.ActualizarEstadoAsync(id, estado);
-            if (!actualizado) return NotFound();
+            // Solo cambia si nadie lo modificó entre la lectura y ahora (por ejemplo, otra pantalla lo canceló).
+            if (!await _pedidoRepository.CambiarEstadoAsync(id, pedido.Estado, estado))
+                return Conflict("Otra persona acaba de cambiar este pedido. Actualiza la pantalla.");
+
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Cancela un pedido. Solo se puede mientras está "Pendiente" (antes de que la cocina empiece a prepararlo).
+        /// Un pedido cancelado no cuenta en las ventas ni deja la mesa ocupada.
+        /// </summary>
+        /// <param name="id">Identificador del pedido.</param>
+        /// <response code="204">Pedido cancelado.</response>
+        /// <response code="401">No hay sesión del personal.</response>
+        /// <response code="404">No existe un pedido con ese id.</response>
+        /// <response code="409">El pedido ya no está pendiente.</response>
+        [Authorize]
+        [HttpPost("{id:int}/cancelar")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Cancelar(int id)
+        {
+            var pedido = await _pedidoQueries.ObtenerPorIdAsync(id);
+            if (pedido is null) return NotFound();
+
+            if (pedido.Estado == EstadoCancelado)
+                return Conflict("El pedido ya estaba cancelado.");
+
+            if (pedido.Estado != EstadosValidos[0] ||
+                !await _pedidoRepository.CambiarEstadoAsync(id, EstadosValidos[0], EstadoCancelado))
+            {
+                return Conflict("Solo se pueden cancelar pedidos pendientes: la cocina ya empezó a prepararlo.");
+            }
 
             return NoContent();
         }

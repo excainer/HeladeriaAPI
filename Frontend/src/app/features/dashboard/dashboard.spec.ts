@@ -35,7 +35,7 @@ describe('Dashboard', () => {
     const t = Array.from<HTMLElement>(f.nativeElement.querySelectorAll('.tarjeta')).map((c) => c.textContent!.replace(/\s+/g, ' ').trim());
     expect(t).toEqual([
       'Pedidos en total3', 'Ventas (pedidos entregados)$10.000', 'Productos disponibles1', 'Mesas1',
-      'Pendiente1', 'En preparación0', 'Listo0', 'Entregado2',
+      'Pendiente1', 'En preparación0', 'Listo0', 'Entregado2', 'Cancelado0',
     ]);
   });
 

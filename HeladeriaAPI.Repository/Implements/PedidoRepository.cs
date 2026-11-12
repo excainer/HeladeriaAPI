@@ -93,6 +93,22 @@ namespace HeladeriaAPI.Repository.Implements
         }
 
         /// <summary>
+        /// Cambia el estado solo si el pedido sigue en <paramref name="estadoActual"/>.
+        /// Evita que dos personas cambien el mismo pedido a la vez (por ejemplo, cancelar mientras
+        /// la cocina empieza a prepararlo): la segunda operación no hace nada y devuelve false.
+        /// </summary>
+        public async Task<bool> CambiarEstadoAsync(int pedidoId, string estadoActual, string nuevoEstado)
+        {
+            const string sql = @"
+                UPDATE Pedidos
+                SET Estado = @Nuevo
+                WHERE PedidoId = @PedidoId AND Estado = @Actual;";
+
+            var filas = await _conexion.ExecuteAsync(sql, new { Nuevo = nuevoEstado, Actual = estadoActual, PedidoId = pedidoId });
+            return filas > 0;
+        }
+
+        /// <summary>
         /// Elimina un pedido junto con sus detalles. Devuelve false si el pedido no existe.
         /// </summary>
         public async Task<bool> EliminarAsync(int pedidoId)

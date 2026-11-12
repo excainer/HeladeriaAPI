@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { SonidoService } from './core/services/sonido';
 
 @Component({
   selector: 'app-root',
@@ -8,5 +9,8 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('frontend');
+  constructor() {
+    // Se crea al inicio para que el primer toque en cualquier pantalla habilite los sonidos.
+    inject(SonidoService);
+  }
 }
