@@ -1,65 +1,79 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { Inicio } from './inicio';
+import { errorInterceptor } from '../../core/interceptors/error';
 import { MesaSesionService } from '../../core/services/mesa-sesion';
+
+const mesas = [
+  { mesaId: 2, numero: 2, estado: 'Disponible' },
+  { mesaId: 1, numero: 1, estado: 'Disponible' },
+];
 
 describe('Inicio', () => {
   let http: HttpTestingController;
 
-  beforeEach(() => {
+  function configurar(numero?: string) {
     sessionStorage.clear();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [
+        provideHttpClient(withInterceptors([errorInterceptor])), provideHttpClientTesting(), provideRouter([]),
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: new Map(numero ? [['numero', numero]] : []) } } },
+      ],
     });
     http = TestBed.inject(HttpTestingController);
-  });
-
-  async function crear() {
-    const fixture = TestBed.createComponent(Inicio);
-    await fixture.whenStable();
-    return fixture;
   }
 
-  function enviar(fixture: Awaited<ReturnType<typeof crear>>, texto: string) {
-    const el: HTMLElement = fixture.nativeElement;
-    const input = el.querySelector('input') as HTMLInputElement;
-    input.value = texto;
-    el.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
-  }
-
-  it('pide un número válido', async () => {
-    const f = await crear();
-    enviar(f, 'abc');
+  it('muestra la portada y las mesas ordenadas', async () => {
+    configurar();
+    const f = TestBed.createComponent(Inicio);
+    http.expectOne('/api/Mesas').flush(mesas);
     await f.whenStable();
-    expect(f.nativeElement.querySelector('[role=alert]').textContent).toContain('Escribe el número de tu mesa');
-    http.expectNone('/api/Mesas');
+    const el: HTMLElement = f.nativeElement;
+    expect(el.querySelector('h1')!.textContent).toBe('HeladApp');
+    expect(Array.from(el.querySelectorAll('.mesa__numero')).map((n) => n.textContent)).toEqual(['1', '2']);
   });
 
-  it('avisa si la mesa no existe', async () => {
-    const f = await crear();
-    enviar(f, '9');
-    http.expectOne('/api/Mesas').flush([{ mesaId: 1, numero: 1, estado: 'Disponible' }]);
-    await f.whenStable();
-    expect(f.nativeElement.querySelector('[role=alert]').textContent).toContain('No encontramos la mesa 9');
-  });
-
-  it('guarda la mesa y entra al menú', async () => {
-    const f = await crear();
+  it('al elegir una mesa la guarda y entra al menú', async () => {
+    configurar();
+    const f = TestBed.createComponent(Inicio);
     const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
-    enviar(f, '2');
-    http.expectOne('/api/Mesas').flush([{ mesaId: 2, numero: 2, estado: 'Disponible' }]);
+    http.expectOne('/api/Mesas').flush(mesas);
+    await f.whenStable();
+    (f.nativeElement.querySelectorAll('.mesa')[1] as HTMLButtonElement).click();
+    expect(TestBed.inject(MesaSesionService).mesa()?.numero).toBe(2);
+    expect(navegar).toHaveBeenCalledWith('/menu');
+  });
+
+  it('con enlace /mesa/:numero entra directo', async () => {
+    configurar('2');
+    const f = TestBed.createComponent(Inicio);
+    const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    http.expectOne('/api/Mesas').flush(mesas);
     await f.whenStable();
     expect(TestBed.inject(MesaSesionService).mesa()?.numero).toBe(2);
     expect(navegar).toHaveBeenCalledWith('/menu');
   });
 
-  it('muestra el error del servidor', async () => {
-    const f = await crear();
-    enviar(f, '1');
-    http.expectOne('/api/Mesas').flush('x', { status: 500, statusText: 'Server Error' });
+  it('con enlace de una mesa que no existe avisa y deja elegir', async () => {
+    configurar('9');
+    const f = TestBed.createComponent(Inicio);
+    http.expectOne('/api/Mesas').flush(mesas);
     await f.whenStable();
-    expect(f.nativeElement.querySelector('[role=alert]').textContent.length).toBeGreaterThan(5);
+    expect(f.nativeElement.querySelector('[role=alert]').textContent).toContain('No encontramos la mesa 9');
+    expect(f.nativeElement.querySelectorAll('.mesa').length).toBe(2);
+  });
+
+  it('si el servidor no responde muestra el error y permite reintentar', async () => {
+    configurar();
+    const f = TestBed.createComponent(Inicio);
+    http.expectOne('/api/Mesas').error(new ProgressEvent('error'));
+    await f.whenStable();
+    expect(f.nativeElement.querySelector('[role=alert]').textContent).toContain('No se pudo conectar');
+    (f.nativeElement.querySelector('[role=alert] button') as HTMLButtonElement).click();
+    http.expectOne('/api/Mesas').flush(mesas);
+    await f.whenStable();
+    expect(f.nativeElement.querySelectorAll('.mesa').length).toBe(2);
   });
 });

@@ -1,26 +1,32 @@
 <section class="inicio">
-  <h1>¿En qué mesa estás?</h1>
-  <p class="ayuda">Escribe el número que aparece en tu mesa para ver el menú y hacer tu pedido.</p>
+  <div class="portada">
+    <h1>HeladApp</h1>
+    <p class="lema">Heladería · Pide desde tu mesa, sin filas</p>
+  </div>
 
-  <form class="formulario" (submit)="ingresar($event, campo.value)">
-    <label for="numero-mesa">Número de mesa</label>
-    <input
-      #campo
-      id="numero-mesa"
-      class="campo"
-      type="text"
-      inputmode="numeric"
-      autocomplete="off"
-      [attr.aria-invalid]="error() ? 'true' : null"
-      [attr.aria-describedby]="error() ? 'error-mesa' : null"
-    />
+  <h2 class="pregunta" id="titulo-mesas">¿En qué mesa estás?</h2>
 
-    @if (error()) {
-      <p id="error-mesa" class="error" role="alert">{{ error() }}</p>
-    }
+  @if (cargando()) {
+    <p role="status">Cargando mesas…</p>
+  } @else if (error()) {
+    <div class="aviso" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="boton boton--secundario" (click)="cargar()">Reintentar</button>
+    </div>
+  }
 
-    <button class="boton" type="submit" [disabled]="cargando()">
-      {{ cargando() ? 'Buscando tu mesa…' : 'Ver el menú' }}
-    </button>
-  </form>
+  @if (!cargando() && mesas().length > 0) {
+    <ul class="mesas" aria-labelledby="titulo-mesas">
+      @for (mesa of mesas(); track mesa.mesaId) {
+        <li>
+          <button type="button" class="mesa" (click)="elegir(mesa)">
+            <span class="mesa__etiqueta">Mesa</span>
+            <span class="mesa__numero">{{ mesa.numero }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  } @else if (!cargando() && !error()) {
+    <p class="aviso">Todavía no hay mesas registradas. Avisa al personal.</p>
+  }
 </section>
